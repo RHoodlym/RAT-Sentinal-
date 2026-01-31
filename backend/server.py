@@ -124,6 +124,8 @@ class Detection(BaseModel):
     mutation_detected: bool = False
     parent_threat_id: Optional[str] = None
     ai_analysis: Optional[str] = None
+    entropy_score: Optional[float] = None
+    entropy_profile: Optional[dict] = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     status: str = "active"
 
