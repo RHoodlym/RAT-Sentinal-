@@ -1123,53 +1123,10 @@ async def entropy_scan(log_data: Optional[str] = None):
 @api_router.post("/entropy/disintegrate/{detection_id}")
 async def entropy_disintegrate(detection_id: str, mode: str = "poetic"):
     """
-    Disintegrate a threat using entropic flood.
-    Modes: 'poetic' (conjugate inversion) or 'brute' (overwhelming)
+    Legacy endpoint - redirects to /disintegrate
     """
-    # Get the detection
-    detection = await db.detections.find_one({"id": detection_id}, {"_id": 0})
-    if not detection:
-        raise HTTPException(status_code=404, detail="Detection not found")
-    
-    if detection.get("status") == "evicted":
-        return {"status": "already_evicted", "detection_id": detection_id}
-    
-    # Execute entropic disintegration
-    result = entropic_neutralizer.disintegrate(detection, mode=mode)
-    
-    # Log to war log
-    war_entry = WarLogEntry(
-        event_type="countermeasure",
-        threat_id=detection_id,
-        threat_name=detection.get("threat_name"),
-        description=f"Entropic Flood ({mode} mode) deployed - {'SUCCESS' if result['success'] else 'PARTIAL'}",
-        ai_decision=f"Entropy delta: {result.get('entropy_delta', result.get('overwhelming_ratio', 0)):.4f}",
-        outcome="SUCCESS" if result["success"] else "PARTIAL"
-    )
-    await db.war_log.insert_one({**war_entry.model_dump(), "timestamp": war_entry.timestamp.isoformat()})
-    
-    # Update detection if successful
-    if result["success"]:
-        await db.detections.update_one(
-            {"id": detection_id},
-            {"$set": {"status": "evicted", "entropy_profile": result}}
-        )
-        
-        evict_entry = WarLogEntry(
-            event_type="eviction",
-            threat_id=detection_id,
-            threat_name=detection.get("threat_name"),
-            description=f"THREAT EVICTED via entropic {mode} flood",
-            outcome="EVICTED"
-        )
-        await db.war_log.insert_one({**evict_entry.model_dump(), "timestamp": evict_entry.timestamp.isoformat()})
-    
-    return {
-        "detection_id": detection_id,
-        "mode": mode,
-        "result": result,
-        "threat_status": "evicted" if result["success"] else "active"
-    }
+    request = DisintegrateRequest(target_sig=detection_id, prune_mode=mode)
+    return await disintegrate_endpoint(request)
 
 @api_router.post("/entropy/flood")
 async def generate_flood(signature: str, intensity: int = 100):
