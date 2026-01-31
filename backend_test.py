@@ -295,7 +295,7 @@ class RATCountermeasureAPITester:
 
     def run_all_tests(self):
         """Run all API tests"""
-        print(f"🔍 Starting RAT Detection API Tests")
+        print(f"🔍 Starting RAT Countermeasure Agent API Tests")
         print(f"📡 Testing against: {self.base_url}")
         print("=" * 60)
         
@@ -304,11 +304,16 @@ class RATCountermeasureAPITester:
             self.test_root_endpoint,
             self.test_system_status,
             self.test_scan_functionality,
+            self.test_agent_run,
+            self.test_agent_state,
             self.test_detections_list,
             self.test_detection_by_id,
             self.test_ai_analysis,
-            self.test_detection_status_update,
+            self.test_war_log,
+            self.test_countermeasures,
+            self.test_countermeasure_techniques,
             self.test_network_connections,
+            self.test_threat_intelligence,
             self.test_statistics,
             self.test_rat_signatures
         ]
@@ -340,7 +345,7 @@ class RATCountermeasureAPITester:
             return 1
 
 def main():
-    tester = RATDetectionAPITester()
+    tester = RATCountermeasureAPITester()
     return tester.run_all_tests()
 
 if __name__ == "__main__":
