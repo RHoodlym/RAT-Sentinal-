@@ -977,30 +977,59 @@ async def disintegrate_endpoint(request: DisintegrateRequest):
         logs: array of decay traces
     """
     # Parse target_sig to find the threat
-    # Format: "ThreatName_hash" or just threat_id
+    # Format: "ThreatName_hash" or just threat_id or threat_name
     target_sig = request.target_sig
     prune_mode = request.prune_mode if request.prune_mode in ["poetic", "brute"] else "poetic"
     
     # Try to find by ID first
     detection = await db.detections.find_one({"id": target_sig}, {"_id": 0})
     
-    # If not found, try to match by signature pattern
+    # If not found, try to match by signature pattern or threat name
     if not detection:
         # Extract threat name from signature (before underscore + hash)
         parts = target_sig.rsplit("_", 1)
         threat_name = parts[0] if len(parts) > 1 else target_sig
         
+        # Try exact match first
         detection = await db.detections.find_one(
-            {"threat_name": {"$regex": threat_name, "$options": "i"}, "status": "active"},
+            {"threat_name": threat_name, "status": "active"},
             {"_id": 0}
         )
+        
+        # Try case-insensitive regex match
+        if not detection:
+            detection = await db.detections.find_one(
+                {"threat_name": {"$regex": f"^{threat_name}$", "$options": "i"}, "status": "active"},
+                {"_id": 0}
+            )
+        
+        # Try partial match (contains)
+        if not detection:
+            detection = await db.detections.find_one(
+                {"threat_name": {"$regex": threat_name, "$options": "i"}, "status": "active"},
+                {"_id": 0}
+            )
+        
+        # Try matching by signature_hash
+        if not detection and len(parts) > 1:
+            sig_hash = parts[1]
+            detection = await db.detections.find_one(
+                {"signature_hash": {"$regex": f"^{sig_hash}", "$options": "i"}, "status": "active"},
+                {"_id": 0}
+            )
     
     if not detection:
+        # List available targets for debugging
+        active = await db.detections.find({"status": "active"}, {"_id": 0, "threat_name": 1, "id": 1}).to_list(5)
+        available = [f"{t.get('threat_name')} (ID: {t.get('id')[:8]}...)" for t in active]
         return {
             "api_version": "1.0",
             "status": "failed",
             "entropy_delta": 0.0,
-            "logs": [{"error": f"Target signature '{target_sig}' not found in active threats"}],
+            "logs": [
+                {"error": f"Target signature '{target_sig}' not found in active threats"},
+                {"available_targets": available if available else "No active threats"}
+            ],
             "target_sig": target_sig
         }
     
