@@ -230,6 +230,94 @@ function App() {
   const [isAgentRunning, setIsAgentRunning] = useState(false);
   const [networkData, setNetworkData] = useState([]);
   const [activeTab, setActiveTab] = useState("overview");
+  const [entropyStats, setEntropyStats] = useState(null);
+  const [entropyScanResults, setEntropyScanResults] = useState(null);
+
+  // Fetch entropy stats
+  const fetchEntropyStats = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/entropy/stats`);
+      setEntropyStats(response.data);
+    } catch (e) {
+      console.error("Failed to fetch entropy stats:", e);
+    }
+  }, []);
+
+  // Run entropy scan
+  const runEntropyScan = async () => {
+    setIsScanning(true);
+    toast.info('Entropy Scan', { description: 'Analyzing threats with Φ-π formula...' });
+    try {
+      const response = await axios.post(`${API}/entropy/scan`);
+      setEntropyScanResults(response.data);
+      toast.success('Entropy Scan Complete', { 
+        description: `Analyzed ${response.data.threat_count || 0} threats` 
+      });
+      await fetchEntropyStats();
+    } catch (e) {
+      toast.error('Entropy Scan Failed', { description: e.message });
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  // Run poetic flood on all active threats
+  const runPoeticFlood = async () => {
+    const active = detections.filter(d => d.status === 'active');
+    if (active.length === 0) {
+      toast.info('No Targets', { description: 'No active threats to neutralize' });
+      return;
+    }
+    
+    setIsScanning(true);
+    toast.info('Poetic Flood', { description: 'Deploying conjugate inversion...' });
+    
+    let evicted = 0;
+    for (const threat of active.slice(0, 5)) { // Process up to 5
+      try {
+        const response = await axios.post(`${API}/entropy/disintegrate/${threat.id}?mode=poetic`);
+        if (response.data.result?.success) evicted++;
+      } catch (e) {
+        console.error(`Failed to disintegrate ${threat.id}:`, e);
+      }
+    }
+    
+    toast.success('Poetic Flood Complete', { 
+      description: `Evicted ${evicted}/${Math.min(active.length, 5)} threats` 
+    });
+    
+    await Promise.all([fetchDetections(), fetchWarLog(), fetchEntropyStats()]);
+    setIsScanning(false);
+  };
+
+  // Run brute flood on all active threats
+  const runBruteFlood = async () => {
+    const active = detections.filter(d => d.status === 'active');
+    if (active.length === 0) {
+      toast.info('No Targets', { description: 'No active threats to neutralize' });
+      return;
+    }
+    
+    setIsScanning(true);
+    toast.info('Brute Flood', { description: 'Deploying triple chaos assault...' });
+    
+    let evicted = 0;
+    for (const threat of active.slice(0, 5)) { // Process up to 5
+      try {
+        const response = await axios.post(`${API}/entropy/disintegrate/${threat.id}?mode=brute`);
+        if (response.data.result?.success) evicted++;
+      } catch (e) {
+        console.error(`Failed to disintegrate ${threat.id}:`, e);
+      }
+    }
+    
+    toast.success('Brute Flood Complete', { 
+      description: `Evicted ${evicted}/${Math.min(active.length, 5)} threats` 
+    });
+    
+    await Promise.all([fetchDetections(), fetchWarLog(), fetchEntropyStats()]);
+    setIsScanning(false);
+  };
 
   // Fetch all data
   const fetchStatus = useCallback(async () => {
