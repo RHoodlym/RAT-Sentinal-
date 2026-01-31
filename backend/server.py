@@ -855,6 +855,162 @@ async def get_rat_signatures():
     """Get known RAT signatures"""
     return RAT_SIGNATURES
 
+# ============== ENTROPY ENGINE API ENDPOINTS ==============
+@api_router.post("/entropy/scan")
+async def entropy_scan(log_data: Optional[str] = None):
+    """
+    Scan data using Phi-Pi-Entropy formula for anomaly detection.
+    Returns entropy scores and detected anomalies.
+    """
+    # Get active threats for entropy analysis
+    active_threats = await db.detections.find({"status": "active"}, {"_id": 0}).to_list(50)
+    
+    if not active_threats:
+        return {
+            "status": "clear",
+            "anomaly_count": 0,
+            "risk_score": 0,
+            "entropy_threshold": 0.75,
+            "message": "No active threats to analyze"
+        }
+    
+    # Analyze threat patterns
+    pattern_analysis = anomaly_detector.analyze_threat_pattern(active_threats)
+    
+    # Get individual entropy profiles
+    threat_entropies = []
+    for threat in active_threats:
+        graph = anomaly_detector.build_threat_graph(threat)
+        analysis = anomaly_detector.detect_anomalies(graph)
+        threat_entropies.append({
+            "threat_id": threat.get("id"),
+            "threat_name": threat.get("threat_name"),
+            "entropy_score": analysis["risk_score"],
+            "anomaly_count": analysis["anomaly_count"],
+            "anomalies": analysis["anomalies"][:3]  # Top 3 anomalies
+        })
+    
+    return {
+        "status": "analyzed",
+        "threat_count": len(active_threats),
+        "threat_entropies": threat_entropies,
+        "pattern_analysis": pattern_analysis,
+        "formula": "S(n) ≈ Φ·S(n-1) + (π/ln n)·e^(-n/ln(n+2))",
+        "entropy_threshold": anomaly_detector.anomaly_threshold
+    }
+
+@api_router.post("/entropy/disintegrate/{detection_id}")
+async def entropy_disintegrate(detection_id: str, mode: str = "poetic"):
+    """
+    Disintegrate a threat using entropic flood.
+    Modes: 'poetic' (conjugate inversion) or 'brute' (overwhelming)
+    """
+    # Get the detection
+    detection = await db.detections.find_one({"id": detection_id}, {"_id": 0})
+    if not detection:
+        raise HTTPException(status_code=404, detail="Detection not found")
+    
+    if detection.get("status") == "evicted":
+        return {"status": "already_evicted", "detection_id": detection_id}
+    
+    # Execute entropic disintegration
+    result = entropic_neutralizer.disintegrate(detection, mode=mode)
+    
+    # Log to war log
+    war_entry = WarLogEntry(
+        event_type="countermeasure",
+        threat_id=detection_id,
+        threat_name=detection.get("threat_name"),
+        description=f"Entropic Flood ({mode} mode) deployed - {'SUCCESS' if result['success'] else 'PARTIAL'}",
+        ai_decision=f"Entropy delta: {result.get('entropy_delta', result.get('overwhelming_ratio', 0)):.4f}",
+        outcome="SUCCESS" if result["success"] else "PARTIAL"
+    )
+    await db.war_log.insert_one({**war_entry.model_dump(), "timestamp": war_entry.timestamp.isoformat()})
+    
+    # Update detection if successful
+    if result["success"]:
+        await db.detections.update_one(
+            {"id": detection_id},
+            {"$set": {"status": "evicted", "entropy_profile": result}}
+        )
+        
+        evict_entry = WarLogEntry(
+            event_type="eviction",
+            threat_id=detection_id,
+            threat_name=detection.get("threat_name"),
+            description=f"THREAT EVICTED via entropic {mode} flood",
+            outcome="EVICTED"
+        )
+        await db.war_log.insert_one({**evict_entry.model_dump(), "timestamp": evict_entry.timestamp.isoformat()})
+    
+    return {
+        "detection_id": detection_id,
+        "mode": mode,
+        "result": result,
+        "threat_status": "evicted" if result["success"] else "active"
+    }
+
+@api_router.post("/entropy/flood")
+async def generate_flood(signature: str, intensity: int = 100):
+    """
+    Generate an entropic flood sequence for a given signature.
+    Uses r=4.0 logistic map with conjugate inversion.
+    """
+    flood = entropy_engine.generate_entropic_flood(signature, intensity)
+    return {
+        "signature": signature,
+        "intensity": intensity,
+        "flood": flood,
+        "formula": "r=4.0 logistic map with conjugate inversion"
+    }
+
+@api_router.get("/entropy/stats")
+async def get_entropy_stats():
+    """Get entropy engine statistics and neutralization metrics."""
+    neutralization_stats = entropic_neutralizer.get_neutralization_stats()
+    
+    # Get entropy scores from recent detections
+    recent_detections = await db.detections.find({}, {"_id": 0}).sort("timestamp", -1).to_list(20)
+    
+    avg_entropy = 0
+    if recent_detections:
+        entropies = []
+        for det in recent_detections:
+            graph = anomaly_detector.build_threat_graph(det)
+            analysis = anomaly_detector.detect_anomalies(graph)
+            entropies.append(analysis["risk_score"])
+        avg_entropy = sum(entropies) / len(entropies) if entropies else 0
+    
+    return {
+        "neutralization_stats": neutralization_stats,
+        "average_threat_entropy": avg_entropy,
+        "flood_history_count": len(entropy_engine.flood_history),
+        "theorem": {
+            "formula": "S(n) ≈ Φ·S(n-1) + (π/ln n)·e^(-n/ln(n+2))",
+            "phi": 1.618033988749895,
+            "r_value": 4.0,
+            "description": "Phi-Pi-Entropy with r=4.0 logistic chaos for conjugate inversion"
+        }
+    }
+
+@api_router.post("/entropy/analyze-pattern")
+async def analyze_threat_patterns():
+    """
+    Analyze all active threats for mutation patterns using graph-based entropy detection.
+    """
+    active_threats = await db.detections.find({"status": "active"}, {"_id": 0}).to_list(100)
+    
+    if not active_threats:
+        return {"status": "clear", "patterns": [], "mutation_likelihood": 0}
+    
+    pattern_analysis = anomaly_detector.analyze_threat_pattern(active_threats)
+    
+    return {
+        "status": "analyzed",
+        "pattern_analysis": pattern_analysis,
+        "recommendation": "entropic_flood_brute" if pattern_analysis["mutation_likelihood"] > 0.5 else "entropic_flood_poetic"
+    }
+
 # Include router
 app.include_router(api_router)
 
