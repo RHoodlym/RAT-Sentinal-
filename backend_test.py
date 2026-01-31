@@ -271,13 +271,13 @@ class RATCountermeasureAPITester:
         success, response = self.run_test("Statistics", "GET", "stats", 200)
         
         if success:
-            required_fields = ['total_scans', 'total_detections', 'active_threats']
+            required_fields = ['total_detections', 'active_threats', 'evicted_threats', 'success_rate']
             missing_fields = [field for field in required_fields if field not in response]
             if missing_fields:
                 self.log_test("Statistics Fields Validation", False, f"Missing fields: {missing_fields}")
                 return False
             else:
-                self.log_test("Statistics Fields Validation", True, f"Stats: {response.get('total_scans', 0)} scans, {response.get('total_detections', 0)} detections")
+                self.log_test("Statistics Fields Validation", True, f"Active: {response.get('active_threats', 0)}, Evicted: {response.get('evicted_threats', 0)}, Success rate: {response.get('success_rate', 0):.1f}%")
         
         return success
 
