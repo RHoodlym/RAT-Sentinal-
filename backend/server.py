@@ -200,12 +200,15 @@ Available techniques:
 4. process_termination - Kill RAT process
 5. memory_corruption - Corrupt RAT memory space
 6. decoy_deployment - Deploy honeypots to confuse
+7. entropic_flood_poetic - Phi-Pi-Entropy chaos flood with conjugate inversion (best for single threats, uses S(n)≈Φ·S(n-1)+(π/ln n)·e^(-n/ln(n+2)) formula)
+8. entropic_flood_brute - Triple chaos assault with r=4.0 logistic map (best for mutations, replicating threats, or stubborn RATs)
 
 Consider:
 - Threat severity and behavior
 - Risk of detection by RAT
 - Effectiveness against this RAT type
-- Whether it's a mutation (may have adapted)
+- Whether it's a mutation (may have adapted) - use entropic_flood_brute for mutations
+- For high-entropy threats or replicating RATs, prefer entropic flood techniques
 
 Respond in JSON format:
 {
