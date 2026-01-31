@@ -552,6 +552,9 @@ function App() {
             <TabsTrigger value="tactics" className="font-mono text-xs" data-testid="tab-tactics">
               <Brain className="w-3 h-3 mr-1" /> Tactics
             </TabsTrigger>
+            <TabsTrigger value="entropy" className="font-mono text-xs" data-testid="tab-entropy">
+              <Atom className="w-3 h-3 mr-1" /> Entropy
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
