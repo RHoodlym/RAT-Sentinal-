@@ -469,6 +469,7 @@ function App() {
     fetchWarLog();
     fetchStats();
     fetchConnections();
+    fetchEntropyStats();
 
     const interval = setInterval(() => {
       fetchStatus();
@@ -477,7 +478,7 @@ function App() {
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [fetchStatus, fetchDetections, fetchWarLog, fetchStats, fetchConnections]);
+  }, [fetchStatus, fetchDetections, fetchWarLog, fetchStats, fetchConnections, fetchEntropyStats]);
 
   // Chart data
   const techniqueData = stats?.by_technique ? Object.entries(stats.by_technique).map(([name, data]) => ({
