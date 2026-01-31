@@ -293,6 +293,136 @@ class RATCountermeasureAPITester:
         
         return success
 
+    def test_entropy_stats(self):
+        """Test entropy stats endpoint"""
+        success, response = self.run_test("Entropy Stats", "GET", "entropy/stats", 200)
+        
+        if success:
+            required_fields = ['neutralization_stats', 'theorem']
+            missing_fields = [field for field in required_fields if field not in response]
+            if missing_fields:
+                self.log_test("Entropy Stats Validation", False, f"Missing fields: {missing_fields}")
+                return False
+            else:
+                theorem = response.get('theorem', {})
+                formula = theorem.get('formula', '')
+                if 'S(n) ≈ Φ·S(n-1) + (π/ln n)·e^(-n/ln(n+2))' in formula:
+                    self.log_test("Phi-Pi-Entropy Formula Validation", True, "Correct formula present")
+                else:
+                    self.log_test("Phi-Pi-Entropy Formula Validation", False, f"Formula mismatch: {formula}")
+                    return False
+        
+        return success
+
+    def test_entropy_scan(self):
+        """Test entropy scan endpoint"""
+        success, response = self.run_test("Entropy Scan", "POST", "entropy/scan", 200)
+        
+        if success:
+            required_fields = ['status', 'formula']
+            missing_fields = [field for field in required_fields if field not in response]
+            if missing_fields:
+                self.log_test("Entropy Scan Validation", False, f"Missing fields: {missing_fields}")
+                return False
+            else:
+                formula = response.get('formula', '')
+                if 'S(n) ≈ Φ·S(n-1) + (π/ln n)·e^(-n/ln(n+2))' in formula:
+                    self.log_test("Entropy Scan Formula Validation", True, "Correct formula in scan response")
+                    threat_count = response.get('threat_count', 0)
+                    self.log_test("Entropy Scan Results", True, f"Analyzed {threat_count} threats")
+                else:
+                    self.log_test("Entropy Scan Formula Validation", False, f"Formula mismatch: {formula}")
+                    return False
+        
+        return success
+
+    def test_entropy_disintegrate_poetic(self):
+        """Test entropy disintegrate with poetic mode"""
+        if not self.detection_id:
+            self.log_test("Entropy Disintegrate Poetic", False, "No detection ID available for testing")
+            return False
+        
+        success, response = self.run_test("Entropy Disintegrate Poetic", "POST", f"entropy/disintegrate/{self.detection_id}?mode=poetic", 200)
+        
+        if success:
+            required_fields = ['detection_id', 'mode', 'result']
+            missing_fields = [field for field in required_fields if field not in response]
+            if missing_fields:
+                self.log_test("Entropy Disintegrate Poetic Validation", False, f"Missing fields: {missing_fields}")
+                return False
+            else:
+                mode = response.get('mode')
+                result = response.get('result', {})
+                if mode == 'poetic' and 'success' in result:
+                    self.log_test("Entropy Disintegrate Poetic Content", True, f"Mode: {mode}, Success: {result.get('success')}")
+                else:
+                    self.log_test("Entropy Disintegrate Poetic Content", False, f"Invalid response format")
+                    return False
+        
+        return success
+
+    def test_entropy_disintegrate_brute(self):
+        """Test entropy disintegrate with brute mode"""
+        if not self.detection_id:
+            self.log_test("Entropy Disintegrate Brute", False, "No detection ID available for testing")
+            return False
+        
+        success, response = self.run_test("Entropy Disintegrate Brute", "POST", f"entropy/disintegrate/{self.detection_id}?mode=brute", 200)
+        
+        if success:
+            required_fields = ['detection_id', 'mode', 'result']
+            missing_fields = [field for field in required_fields if field not in response]
+            if missing_fields:
+                self.log_test("Entropy Disintegrate Brute Validation", False, f"Missing fields: {missing_fields}")
+                return False
+            else:
+                mode = response.get('mode')
+                result = response.get('result', {})
+                if mode == 'brute' and 'success' in result:
+                    self.log_test("Entropy Disintegrate Brute Content", True, f"Mode: {mode}, Success: {result.get('success')}")
+                else:
+                    self.log_test("Entropy Disintegrate Brute Content", False, f"Invalid response format")
+                    return False
+        
+        return success
+
+    def test_entropy_flood(self):
+        """Test entropy flood generation"""
+        test_data = {"signature": "test_signature", "intensity": 50}
+        success, response = self.run_test("Entropy Flood", "POST", "entropy/flood?signature=test_signature&intensity=50", 200)
+        
+        if success:
+            required_fields = ['signature', 'intensity', 'flood', 'formula']
+            missing_fields = [field for field in required_fields if field not in response]
+            if missing_fields:
+                self.log_test("Entropy Flood Validation", False, f"Missing fields: {missing_fields}")
+                return False
+            else:
+                formula = response.get('formula', '')
+                if 'r=4.0 logistic map' in formula:
+                    self.log_test("Entropy Flood Formula Validation", True, "Correct logistic map formula")
+                else:
+                    self.log_test("Entropy Flood Formula Validation", False, f"Formula mismatch: {formula}")
+                    return False
+        
+        return success
+
+    def test_entropy_pattern_analysis(self):
+        """Test entropy pattern analysis"""
+        success, response = self.run_test("Entropy Pattern Analysis", "POST", "entropy/analyze-pattern", 200)
+        
+        if success:
+            required_fields = ['status']
+            missing_fields = [field for field in required_fields if field not in response]
+            if missing_fields:
+                self.log_test("Entropy Pattern Analysis Validation", False, f"Missing fields: {missing_fields}")
+                return False
+            else:
+                status = response.get('status')
+                self.log_test("Entropy Pattern Analysis Content", True, f"Status: {status}")
+        
+        return success
+
     def run_all_tests(self):
         """Run all API tests"""
         print(f"🔍 Starting RAT Countermeasure Agent API Tests")
