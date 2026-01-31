@@ -660,6 +660,12 @@ async def get_agent_state():
     state = await db.agent_state.find_one({"id": "agent_state_singleton"}, {"_id": 0})
     if not state:
         state = AgentState().model_dump()
+    else:
+        # Ensure default values for missing fields
+        default_state = AgentState().model_dump()
+        for key, value in default_state.items():
+            if key not in state:
+                state[key] = value
     return state
 
 @api_router.post("/agent/mode")
