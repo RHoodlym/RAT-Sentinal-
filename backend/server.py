@@ -412,6 +412,35 @@ async def execute_countermeasure(technique: str, threat: dict) -> dict:
             "honeypot_files_created": random.randint(10, 30),
             "rat_confused": success
         }
+    elif technique == "entropic_flood_poetic":
+        # Use the Phi-Pi-Entropy engine for poetic mode disintegration
+        disintegration = entropic_neutralizer.disintegrate(threat, mode="poetic")
+        success = disintegration["success"]
+        result["success"] = success
+        result["details"] = {
+            "mode": "poetic",
+            "formula": "S(n) ≈ Φ·S(n-1) + (π/ln n)·e^(-n/ln(n+2))",
+            "initial_entropy": disintegration["initial_entropy"],
+            "flood_energy": disintegration["flood_energy"],
+            "entropy_delta": disintegration["entropy_delta"],
+            "net_zero_achieved": disintegration["net_zero_achieved"],
+            "conjugate_inversion_applied": True,
+            "chaos_seed": disintegration["signature"]
+        }
+    elif technique == "entropic_flood_brute":
+        # Use the Phi-Pi-Entropy engine for brute mode disintegration
+        disintegration = entropic_neutralizer.disintegrate(threat, mode="brute")
+        success = disintegration["success"]
+        result["success"] = success
+        result["details"] = {
+            "mode": "brute",
+            "formula": "r=4.0 logistic chaos × 3 assaults",
+            "initial_entropy": disintegration["initial_entropy"],
+            "total_flood_energy": disintegration["total_flood_energy"],
+            "overwhelming_ratio": disintegration["overwhelming_ratio"],
+            "assault_count": disintegration["assault_count"],
+            "entropy_overwhelmed": success
+        }
     
     return result
 
