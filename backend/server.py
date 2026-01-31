@@ -623,7 +623,9 @@ async def start_scan(background_tasks: BackgroundTasks):
         doc = detection.model_dump()
         doc['timestamp'] = doc['timestamp'].isoformat()
         await db.detections.insert_one(doc)
-        detections.append(doc)
+        # Create a clean copy without MongoDB _id
+        clean_doc = {k: v for k, v in doc.items() if k != '_id'}
+        detections.append(clean_doc)
         
         # Log to war log
         war_entry = WarLogEntry(
