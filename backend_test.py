@@ -83,26 +83,113 @@ class RATCountermeasureAPITester:
         return success
 
     def test_scan_functionality(self):
-        """Test scan endpoint"""
-        success, response = self.run_test("Full Scan", "POST", "scan", 200, {"scan_type": "full"})
+        """Test scan endpoint that triggers agent automatically"""
+        success, response = self.run_test("Scan with Agent Trigger", "POST", "scan", 200)
         
         if success:
-            required_fields = ['id', 'scan_type', 'items_scanned', 'threats_found']
+            required_fields = ['scan_id', 'items_scanned', 'threats_found', 'agent_triggered']
             missing_fields = [field for field in required_fields if field not in response]
             if missing_fields:
                 self.log_test("Scan Response Validation", False, f"Missing fields: {missing_fields}")
                 return False
             else:
-                self.log_test("Scan Response Validation", True, f"Scanned {response.get('items_scanned', 0)} items, found {response.get('threats_found', 0)} threats")
+                self.log_test("Scan Response Validation", True, f"Scanned {response.get('items_scanned', 0)} items, found {response.get('threats_found', 0)} threats, agent triggered: {response.get('agent_triggered', False)}")
                 
                 # Store detection IDs for later tests
                 if 'detections' in response and response['detections']:
                     self.detection_id = response['detections'][0].get('id')
         
-        # Test quick scan
-        quick_success, _ = self.run_test("Quick Scan", "POST", "scan", 200, {"scan_type": "quick"})
+        return success
+
+    def test_agent_run(self):
+        """Test manual agent cycle trigger"""
+        success, response = self.run_test("Agent Run", "POST", "agent/run", 200)
         
-        return success and quick_success
+        if success:
+            required_fields = ['action', 'threats_processed']
+            missing_fields = [field for field in required_fields if field not in response]
+            if missing_fields:
+                self.log_test("Agent Run Validation", False, f"Missing fields: {missing_fields}")
+                return False
+            else:
+                self.log_test("Agent Run Validation", True, f"Action: {response.get('action')}, Threats processed: {response.get('threats_processed', 0)}")
+        
+        return success
+
+    def test_agent_state(self):
+        """Test agent state endpoint"""
+        success, response = self.run_test("Agent State", "GET", "agent/state", 200)
+        
+        if success:
+            required_fields = ['is_active', 'mode', 'threats_evicted', 'countermeasures_deployed']
+            missing_fields = [field for field in required_fields if field not in response]
+            if missing_fields:
+                self.log_test("Agent State Validation", False, f"Missing fields: {missing_fields}")
+                return False
+            else:
+                self.log_test("Agent State Validation", True, f"Mode: {response.get('mode')}, Active: {response.get('is_active')}, Evicted: {response.get('threats_evicted', 0)}")
+        
+        return success
+
+    def test_war_log(self):
+        """Test war log endpoint"""
+        success, response = self.run_test("War Log", "GET", "war-log", 200)
+        
+        if success and isinstance(response, list):
+            self.log_test("War Log Validation", True, f"Retrieved {len(response)} war log entries")
+            
+            # Check for required fields in war log entries
+            if response:
+                entry = response[0]
+                required_fields = ['event_type', 'description', 'timestamp']
+                missing_fields = [field for field in required_fields if field not in entry]
+                if missing_fields:
+                    self.log_test("War Log Entry Validation", False, f"Missing fields: {missing_fields}")
+                    return False
+                else:
+                    self.log_test("War Log Entry Validation", True, f"Event type: {entry.get('event_type')}")
+        elif success:
+            self.log_test("War Log Validation", False, "Response is not a list")
+            return False
+        
+        return success
+
+    def test_countermeasures(self):
+        """Test countermeasures endpoint"""
+        success, response = self.run_test("Countermeasures", "GET", "countermeasures", 200)
+        
+        if success and isinstance(response, list):
+            self.log_test("Countermeasures Validation", True, f"Retrieved {len(response)} countermeasures")
+        elif success:
+            self.log_test("Countermeasures Validation", False, "Response is not a list")
+            return False
+        
+        return success
+
+    def test_countermeasure_techniques(self):
+        """Test countermeasure techniques endpoint"""
+        success, response = self.run_test("CM Techniques", "GET", "countermeasures/techniques", 200)
+        
+        if success and isinstance(response, dict):
+            techniques = list(response.keys())
+            self.log_test("CM Techniques Validation", True, f"Available techniques: {len(techniques)} - {', '.join(techniques[:3])}")
+        elif success:
+            self.log_test("CM Techniques Validation", False, "Response is not a dict")
+            return False
+        
+        return success
+
+    def test_threat_intelligence(self):
+        """Test threat intelligence endpoint"""
+        success, response = self.run_test("Threat Intelligence", "GET", "threat-intelligence", 200)
+        
+        if success and isinstance(response, list):
+            self.log_test("Threat Intelligence Validation", True, f"Retrieved {len(response)} intelligence entries")
+        elif success:
+            self.log_test("Threat Intelligence Validation", False, "Response is not a list")
+            return False
+        
+        return success
 
     def test_detections_list(self):
         """Test detections list endpoint"""
