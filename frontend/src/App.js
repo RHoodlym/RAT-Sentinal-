@@ -24,7 +24,10 @@ import {
   Shield,
   Skull,
   Brain,
-  TrendingUp
+  TrendingUp,
+  Flame,
+  Atom,
+  Waves
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -43,7 +46,12 @@ import {
   Pie,
   Cell,
   BarChart,
-  Bar
+  Bar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar
 } from "recharts";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -57,7 +65,8 @@ const StatCard = ({ title, value, icon: Icon, status, subtitle, glow }) => {
     danger: "text-red-500",
     critical: "text-red-600",
     neutral: "text-zinc-400",
-    purple: "text-purple-500"
+    purple: "text-purple-500",
+    cyan: "text-cyan-500"
   };
 
   return (
