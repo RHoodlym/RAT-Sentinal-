@@ -445,7 +445,14 @@ class RATCountermeasureAPITester:
             self.test_network_connections,
             self.test_threat_intelligence,
             self.test_statistics,
-            self.test_rat_signatures
+            self.test_rat_signatures,
+            # Entropy Engine Tests
+            self.test_entropy_stats,
+            self.test_entropy_scan,
+            self.test_entropy_disintegrate_poetic,
+            self.test_entropy_disintegrate_brute,
+            self.test_entropy_flood,
+            self.test_entropy_pattern_analysis
         ]
         
         for test in tests:
