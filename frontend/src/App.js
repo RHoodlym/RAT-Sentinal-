@@ -801,13 +801,179 @@ function App() {
               </div>
             </div>
           </TabsContent>
+
+          {/* Entropy Tab */}
+          <TabsContent value="entropy" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Entropy Formula Display */}
+              <div className="lg:col-span-2 card-tactical p-4 border-cyan-500/30" data-testid="entropy-formula">
+                <div className="flex items-center gap-2 mb-4">
+                  <Atom className="w-4 h-4 text-cyan-500" />
+                  <h2 className="text-sm font-bold uppercase tracking-wider">Phi-Pi-Entropy Engine</h2>
+                </div>
+                <div className="bg-black/50 p-4 rounded border border-cyan-500/20 mb-4">
+                  <p className="font-mono text-cyan-400 text-sm mb-2">Core Formula:</p>
+                  <p className="font-mono text-lg text-white">S(n) ≈ Φ · S(n-1) + (π / ln n) · e<sup>-n/ln(n+2)</sup></p>
+                  <div className="grid grid-cols-3 gap-4 mt-4 text-xs">
+                    <div>
+                      <span className="text-zinc-500">Φ (Golden Ratio)</span>
+                      <p className="font-mono text-amber-400">1.618033989</p>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500">π (Pi)</span>
+                      <p className="font-mono text-purple-400">3.141592654</p>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500">r (Chaos)</span>
+                      <p className="font-mono text-red-400">4.0</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-zinc-900/50 p-3 rounded border border-zinc-800">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Waves className="w-4 h-4 text-purple-400" />
+                      <span className="text-xs uppercase text-zinc-500">Poetic Mode</span>
+                    </div>
+                    <p className="text-xs text-zinc-400">Conjugate inversion for entropy cancellation. Uses backward chaos flood to achieve net-zero entropy delta.</p>
+                  </div>
+                  <div className="bg-zinc-900/50 p-3 rounded border border-zinc-800">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Flame className="w-4 h-4 text-red-400" />
+                      <span className="text-xs uppercase text-zinc-500">Brute Mode</span>
+                    </div>
+                    <p className="text-xs text-zinc-400">Triple chaos assault with r=4.0 logistic map. Overwhelms threat entropy through flooding.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Entropy Stats */}
+              <div className="card-tactical p-4" data-testid="entropy-stats">
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp className="w-4 h-4 text-emerald-500" />
+                  <h2 className="text-sm font-bold uppercase tracking-wider">Entropy Stats</h2>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-zinc-500">Avg Threat Entropy</span>
+                    <span className="font-mono text-cyan-400">{entropyStats?.average_threat_entropy?.toFixed(4) || '0.0000'}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-zinc-500">Floods Generated</span>
+                    <span className="font-mono text-purple-400">{entropyStats?.flood_history_count || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-zinc-500">Poetic Attempts</span>
+                    <span className="font-mono text-amber-400">{entropyStats?.neutralization_stats?.poetic_attempts || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-zinc-500">Brute Attempts</span>
+                    <span className="font-mono text-red-400">{entropyStats?.neutralization_stats?.brute_attempts || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-zinc-500">Success Rate</span>
+                    <span className={`font-mono ${(entropyStats?.neutralization_stats?.success_rate || 0) > 0.7 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {((entropyStats?.neutralization_stats?.success_rate || 0) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-zinc-500">Avg Entropy Delta</span>
+                    <span className="font-mono text-cyan-400">{entropyStats?.neutralization_stats?.avg_entropy_delta?.toFixed(4) || '0.0000'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Entropy Actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="card-tactical p-4" data-testid="entropy-actions">
+                <div className="flex items-center gap-2 mb-4">
+                  <Zap className="w-4 h-4 text-amber-500" />
+                  <h2 className="text-sm font-bold uppercase tracking-wider">Entropy Actions</h2>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    onClick={runEntropyScan}
+                    disabled={isScanning}
+                    data-testid="entropy-scan-btn"
+                    className="bg-cyan-600 hover:bg-cyan-700 text-white font-mono text-xs uppercase"
+                  >
+                    <Atom className="w-4 h-4 mr-2" />
+                    Entropy Scan
+                  </Button>
+                  <Button
+                    onClick={runPoeticFlood}
+                    disabled={isScanning || activeThreats.length === 0}
+                    data-testid="poetic-flood-btn"
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-mono text-xs uppercase"
+                  >
+                    <Waves className="w-4 h-4 mr-2" />
+                    Poetic Flood
+                  </Button>
+                  <Button
+                    onClick={runBruteFlood}
+                    disabled={isScanning || activeThreats.length === 0}
+                    data-testid="brute-flood-btn"
+                    className="bg-red-600 hover:bg-red-700 text-white font-mono text-xs uppercase"
+                  >
+                    <Flame className="w-4 h-4 mr-2" />
+                    Brute Flood
+                  </Button>
+                  <Button
+                    onClick={fetchEntropyStats}
+                    data-testid="refresh-entropy-btn"
+                    variant="outline"
+                    className="font-mono text-xs uppercase border-zinc-700"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
+              </div>
+
+              {/* Entropy Scan Results */}
+              <div className="card-tactical p-4" data-testid="entropy-scan-results">
+                <div className="flex items-center gap-2 mb-4">
+                  <Target className="w-4 h-4 text-cyan-500" />
+                  <h2 className="text-sm font-bold uppercase tracking-wider">Scan Results</h2>
+                </div>
+                <ScrollArea className="h-48">
+                  {entropyScanResults?.threat_entropies?.length > 0 ? (
+                    <div className="space-y-2">
+                      {entropyScanResults.threat_entropies.map((threat, idx) => (
+                        <div key={idx} className="p-2 bg-zinc-900/50 rounded border border-zinc-800">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs font-mono text-zinc-300">{threat.threat_name}</span>
+                            <Badge className={threat.entropy_score > 0.7 ? 'badge-danger' : threat.entropy_score > 0.5 ? 'badge-warning' : 'badge-safe'}>
+                              {(threat.entropy_score * 100).toFixed(1)}%
+                            </Badge>
+                          </div>
+                          <div className="w-full bg-zinc-800 h-1 rounded">
+                            <div 
+                              className={`h-1 rounded ${threat.entropy_score > 0.7 ? 'bg-red-500' : threat.entropy_score > 0.5 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                              style={{ width: `${threat.entropy_score * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-zinc-500">
+                      <Atom className="w-8 h-8 mb-2 text-zinc-700" />
+                      <p className="font-mono text-sm">Run entropy scan to analyze</p>
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
 
       {/* Footer */}
       <footer className="border-t border-white/10 mt-8 py-4">
         <div className="container mx-auto px-4 flex items-center justify-between text-xs text-zinc-500 font-mono">
-          <span>RAT COUNTERMEASURE AGENT // AUTONOMOUS DEFENSE</span>
+          <span>RAT COUNTERMEASURE AGENT // AUTONOMOUS DEFENSE // Φ-π-ENTROPY</span>
           <span>Last update: {new Date().toLocaleTimeString()}</span>
         </div>
       </footer>
