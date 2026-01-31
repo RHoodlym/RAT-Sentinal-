@@ -1,34 +1,189 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Main App Styles */
+.App {
+  min-height: 100vh;
+  background: #09090B;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Grid container */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 1rem;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+@media (min-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    padding: 1.5rem;
+  }
 }
 
-.App-link {
-    color: #61dafb;
+@media (min-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+@media (min-width: 1280px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 2fr 1fr;
+    padding: 2rem;
+  }
+}
+
+/* Stat card */
+.stat-card {
+  position: relative;
+  padding: 1.25rem;
+  background: rgba(24, 24, 27, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+}
+
+/* Terminal log */
+.terminal-log {
+  background: rgba(9, 9, 11, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  padding: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.terminal-log .log-entry {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.terminal-log .timestamp {
+  color: #A1A1AA;
+  flex-shrink: 0;
+}
+
+.terminal-log .log-safe {
+  color: #10B981;
+}
+
+.terminal-log .log-warning {
+  color: #F59E0B;
+}
+
+.terminal-log .log-danger {
+  color: #EF4444;
+}
+
+.terminal-log .log-info {
+  color: #3B82F6;
+}
+
+/* Detection table */
+.detection-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.detection-table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: rgba(39, 39, 42, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #A1A1AA;
+}
+
+.detection-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+}
+
+.detection-table tr:hover {
+  background: rgba(39, 39, 42, 0.3);
+}
+
+/* Scan progress */
+.scan-progress {
+  position: relative;
+  height: 4px;
+  background: rgba(39, 39, 42, 0.5);
+  overflow: hidden;
+}
+
+.scan-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #10B981, #059669);
+  transition: width 0.3s ease;
+}
+
+.scan-progress-bar.scanning {
+  background: linear-gradient(90deg, #10B981, #34D399, #10B981);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Network graph area */
+.network-graph {
+  background: rgba(24, 24, 27, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+}
+
+/* Threat indicator */
+.threat-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.threat-indicator.critical {
+  background: rgba(239, 68, 68, 0.2);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.threat-indicator.high {
+  background: rgba(249, 115, 22, 0.2);
+  color: #F97316;
+  border: 1px solid rgba(249, 115, 22, 0.5);
+}
+
+.threat-indicator.medium {
+  background: rgba(245, 158, 11, 0.2);
+  color: #F59E0B;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+}
+
+.threat-indicator.low {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22C55E;
+  border: 1px solid rgba(34, 197, 94, 0.5);
 }
