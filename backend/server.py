@@ -645,9 +645,9 @@ async def get_system_status():
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
-@api_router.post("/scan")
+@api_router.post("/system/scan")
 async def start_scan(background_tasks: BackgroundTasks):
-    """Start a system scan and trigger agent response"""
+    """Start a system scan and trigger agent response (generates simulated threats)"""
     
     detections = []
     items_scanned = random.randint(2000, 8000)
