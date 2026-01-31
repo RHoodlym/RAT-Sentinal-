@@ -858,49 +858,267 @@ async def get_rat_signatures():
     """Get known RAT signatures"""
     return RAT_SIGNATURES
 
-# ============== ENTROPY ENGINE API ENDPOINTS ==============
-@api_router.post("/entropy/scan")
-async def entropy_scan(log_data: Optional[str] = None):
+# ============== SPEC-COMPLIANT API ENDPOINTS ==============
+# Matches the Joesson API specification v1.0
+
+class ScanRequest(BaseModel):
+    log_file: Optional[str] = None
+    entropy_threshold: float = 0.8
+
+class DisintegrateRequest(BaseModel):
+    target_sig: str
+    prune_mode: str = "poetic"  # 'poetic' or 'brute'
+
+@api_router.post("/scan")
+async def scan_endpoint(request: ScanRequest):
     """
-    Scan data using Phi-Pi-Entropy formula for anomaly detection.
-    Returns entropy scores and detected anomalies.
+    POST /scan - Spec-compliant endpoint
+    Scans system logs for trojan signatures using Phi-Pi-Entropy formula.
+    
+    Params:
+        log_file: string (path to system logs) - optional, uses DB threats if not provided
+        entropy_threshold: float (default: 0.8, pi-scaled chaos detect)
+    
+    Response:
+        anomalies: array of trojan signatures (high-entropy OOD inputs)
+        risk_score: float (0-1, based on S(n) simulation)
     """
-    # Get active threats for entropy analysis
-    active_threats = await db.detections.find({"status": "active"}, {"_id": 0}).to_list(50)
+    # Update threshold if provided
+    original_threshold = anomaly_detector.anomaly_threshold
+    anomaly_detector.anomaly_threshold = request.entropy_threshold
     
-    if not active_threats:
-        return {
-            "status": "clear",
-            "anomaly_count": 0,
-            "risk_score": 0,
-            "entropy_threshold": 0.75,
-            "message": "No active threats to analyze"
-        }
+    anomalies = []
+    total_risk_score = 0.0
+    decay_traces = []
     
-    # Analyze threat patterns
-    pattern_analysis = anomaly_detector.analyze_threat_pattern(active_threats)
+    # If log_file provided, analyze it
+    if request.log_file:
+        try:
+            # Compute entropy sequence from log data
+            entropy_scores = entropy_engine.compute_sequence_entropy(request.log_file, window_size=10)
+            
+            # Detect anomalies in log data
+            for i, score in enumerate(entropy_scores):
+                if score > request.entropy_threshold:
+                    anomalies.append({
+                        "signature": f"LOG_ANOMALY_{i}",
+                        "entropy": score,
+                        "position": i,
+                        "type": "high_entropy_ood",
+                        "severity": "critical" if score > 0.9 else "high"
+                    })
+                    decay_traces.append({
+                        "step": i,
+                        "entropy": score,
+                        "threshold_exceeded": True
+                    })
+            
+            total_risk_score = max(entropy_scores) if entropy_scores else 0.0
+            
+        except Exception as e:
+            # Fallback to DB-based scan
+            pass
     
-    # Get individual entropy profiles
-    threat_entropies = []
+    # Also scan threats from database
+    active_threats = await db.detections.find({"status": "active"}, {"_id": 0}).to_list(100)
+    
     for threat in active_threats:
         graph = anomaly_detector.build_threat_graph(threat)
         analysis = anomaly_detector.detect_anomalies(graph)
-        threat_entropies.append({
-            "threat_id": threat.get("id"),
-            "threat_name": threat.get("threat_name"),
-            "entropy_score": analysis["risk_score"],
-            "anomaly_count": analysis["anomaly_count"],
-            "anomalies": analysis["anomalies"][:3]  # Top 3 anomalies
-        })
+        
+        if analysis["risk_score"] > request.entropy_threshold or analysis["anomaly_count"] > 0:
+            sig_hash = hashlib.md5(threat.get("threat_name", "").encode()).hexdigest()[:12]
+            anomalies.append({
+                "signature": f"{threat.get('threat_name')}_{sig_hash}",
+                "entropy": analysis["risk_score"],
+                "type": threat.get("detection_type", "unknown"),
+                "severity": threat.get("severity", "medium"),
+                "threat_id": threat.get("id"),
+                "behaviors": threat.get("behavioral_profile", []),
+                "anomaly_nodes": analysis["anomalies"][:3]
+            })
+            
+            # Add decay trace
+            decay_traces.append({
+                "threat": threat.get("threat_name"),
+                "entropy": analysis["risk_score"],
+                "complexity": analysis.get("complexity_score", 0),
+                "nodes_analyzed": analysis.get("total_nodes", 0)
+            })
+            
+            total_risk_score = max(total_risk_score, analysis["risk_score"])
+    
+    # Restore original threshold
+    anomaly_detector.anomaly_threshold = original_threshold
     
     return {
-        "status": "analyzed",
-        "threat_count": len(active_threats),
-        "threat_entropies": threat_entropies,
-        "pattern_analysis": pattern_analysis,
-        "formula": "S(n) ≈ Φ·S(n-1) + (π/ln n)·e^(-n/ln(n+2))",
-        "entropy_threshold": anomaly_detector.anomaly_threshold
+        "api_version": "1.0",
+        "anomalies": anomalies,
+        "risk_score": round(total_risk_score, 4),
+        "entropy_threshold": request.entropy_threshold,
+        "total_scanned": len(active_threats) + (1 if request.log_file else 0),
+        "theorem_seed": "S(n) ≈ Φ · S(n-1) + (π / ln n) · e^(-n / ln(n+2)); r=4.0 for conjugate inversion",
+        "decay_traces": decay_traces[:20]  # Limit traces
     }
+
+@api_router.post("/disintegrate")
+async def disintegrate_endpoint(request: DisintegrateRequest):
+    """
+    POST /disintegrate - Spec-compliant endpoint
+    Neutralizes a trojan signature using entropic flood.
+    
+    Params:
+        target_sig: string (signature from /scan)
+        prune_mode: enum ['poetic', 'brute'] (default: poetic - entropic flood)
+    
+    Response:
+        status: neutralized | partial | failed
+        entropy_delta: float (net-zero confirmation)
+        logs: array of decay traces
+    """
+    # Parse target_sig to find the threat
+    # Format: "ThreatName_hash" or just threat_id
+    target_sig = request.target_sig
+    prune_mode = request.prune_mode if request.prune_mode in ["poetic", "brute"] else "poetic"
+    
+    # Try to find by ID first
+    detection = await db.detections.find_one({"id": target_sig}, {"_id": 0})
+    
+    # If not found, try to match by signature pattern
+    if not detection:
+        # Extract threat name from signature (before underscore + hash)
+        parts = target_sig.rsplit("_", 1)
+        threat_name = parts[0] if len(parts) > 1 else target_sig
+        
+        detection = await db.detections.find_one(
+            {"threat_name": {"$regex": threat_name, "$options": "i"}, "status": "active"},
+            {"_id": 0}
+        )
+    
+    if not detection:
+        return {
+            "api_version": "1.0",
+            "status": "failed",
+            "entropy_delta": 0.0,
+            "logs": [{"error": f"Target signature '{target_sig}' not found in active threats"}],
+            "target_sig": target_sig
+        }
+    
+    if detection.get("status") == "evicted":
+        return {
+            "api_version": "1.0",
+            "status": "neutralized",
+            "entropy_delta": 0.0,
+            "logs": [{"info": "Target already neutralized"}],
+            "target_sig": target_sig
+        }
+    
+    # Execute disintegration
+    result = entropic_neutralizer.disintegrate(detection, mode=prune_mode)
+    
+    # Build decay trace logs
+    logs = []
+    
+    if prune_mode == "poetic":
+        logs.append({
+            "phase": "initialization",
+            "action": "Computing initial threat entropy",
+            "value": result.get("initial_entropy", 0)
+        })
+        logs.append({
+            "phase": "flood_generation",
+            "action": "Generating conjugate inversion sequence",
+            "chaos_seed": result.get("signature", ""),
+            "flood_energy": result.get("flood_energy", 0)
+        })
+        logs.append({
+            "phase": "entropy_cancellation",
+            "action": "Applying backward chaos flood",
+            "entropy_delta": result.get("entropy_delta", 0),
+            "net_zero_achieved": result.get("net_zero_achieved", False)
+        })
+        if result.get("flood_sample"):
+            logs.append({
+                "phase": "chaos_sequence",
+                "action": "r=4.0 logistic map samples",
+                "samples": result.get("flood_sample", [])[:5]
+            })
+    else:  # brute
+        logs.append({
+            "phase": "initialization",
+            "action": "Computing initial threat entropy",
+            "value": result.get("initial_entropy", 0)
+        })
+        logs.append({
+            "phase": "assault_1",
+            "action": "Deploying chaos flood #1",
+            "energy": result.get("total_flood_energy", 0) / 3
+        })
+        logs.append({
+            "phase": "assault_2",
+            "action": "Deploying chaos flood #2",
+            "energy": result.get("total_flood_energy", 0) / 3
+        })
+        logs.append({
+            "phase": "assault_3",
+            "action": "Deploying chaos flood #3",
+            "energy": result.get("total_flood_energy", 0) / 3
+        })
+        logs.append({
+            "phase": "overwhelming",
+            "action": "Entropy overwhelming check",
+            "ratio": result.get("overwhelming_ratio", 0),
+            "success": result.get("success", False)
+        })
+    
+    # Determine status
+    if result.get("success"):
+        status = "neutralized"
+        # Update detection in DB
+        await db.detections.update_one(
+            {"id": detection.get("id")},
+            {"$set": {"status": "evicted", "entropy_profile": result}}
+        )
+        
+        # Log to war log
+        war_entry = WarLogEntry(
+            event_type="eviction",
+            threat_id=detection.get("id"),
+            threat_name=detection.get("threat_name"),
+            description=f"NEUTRALIZED via {prune_mode} entropic flood (target_sig: {target_sig})",
+            outcome="EVICTED"
+        )
+        await db.war_log.insert_one({**war_entry.model_dump(), "timestamp": war_entry.timestamp.isoformat()})
+    else:
+        status = "partial"
+        logs.append({
+            "phase": "result",
+            "action": "Partial neutralization - threat may require additional floods",
+            "recommendation": "brute" if prune_mode == "poetic" else "retry with higher intensity"
+        })
+    
+    # Calculate entropy_delta based on mode
+    entropy_delta = result.get("entropy_delta", 0) if prune_mode == "poetic" else (1.0 - result.get("overwhelming_ratio", 0))
+    
+    return {
+        "api_version": "1.0",
+        "status": status,
+        "entropy_delta": round(entropy_delta, 6),
+        "logs": logs,
+        "target_sig": target_sig,
+        "prune_mode": prune_mode,
+        "threat_name": detection.get("threat_name"),
+        "theorem_applied": "S(n) ≈ Φ · S(n-1) + (π / ln n) · e^(-n / ln(n+2)); r=4.0"
+    }
+
+# ============== LEGACY ENTROPY ENDPOINTS (kept for compatibility) ==============
+@api_router.post("/entropy/scan")
+async def entropy_scan(log_data: Optional[str] = None):
+    """
+    Legacy endpoint - redirects to /scan
+    """
+    request = ScanRequest(log_file=log_data, entropy_threshold=0.8)
+    return await scan_endpoint(request)
 
 @api_router.post("/entropy/disintegrate/{detection_id}")
 async def entropy_disintegrate(detection_id: str, mode: str = "poetic"):
