@@ -96,6 +96,18 @@ COUNTERMEASURE_TECHNIQUES = {
         "description": "Deploy honeypot files/processes to confuse RATs",
         "risk_level": "none",
         "effectiveness": 0.5
+    },
+    "entropic_flood_poetic": {
+        "name": "Entropic Flood (Poetic)",
+        "description": "Phi-Pi-Entropy chaos flood with conjugate inversion for entropy cancellation",
+        "risk_level": "none",
+        "effectiveness": 0.88
+    },
+    "entropic_flood_brute": {
+        "name": "Entropic Flood (Brute)",
+        "description": "Triple chaos assault with entropy overwhelming - maximum disruption",
+        "risk_level": "low",
+        "effectiveness": 0.92
     }
 }
 
