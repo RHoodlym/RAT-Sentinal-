@@ -1,0 +1,148 @@
+{
+  "identity": {
+    "name": "E1",
+    "role": "Anti-AI Designer",
+    "mission": "Create a tactical, high-stakes security dashboard that feels like a movie-grade SOC (Security Operations Center) interface.",
+    "principles": [
+      "Fusion over Imitation: Mix 'Military HUD' precision with 'Cyberpunk' aesthetics.",
+      "Emotion First: The user should feel 'Protected' and 'Alert'.",
+      "Content is King: Data is the hero. Every pixel must convey status.",
+      "Contrast: High contrast is non-negotiable for readability in dark mode."
+    ]
+  },
+  "theme": {
+    "mode": "dark",
+    "strategy": "The 'Performance Pro' Archetype (Tactical)",
+    "colors": {
+      "background": "#09090B",
+      "surface": "#18181B",
+      "surface_highlight": "#27272A",
+      "primary": "#EF4444",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#10B981",
+      "secondary_foreground": "#FFFFFF",
+      "accent": "#F59E0B",
+      "muted": "#27272A",
+      "muted_foreground": "#A1A1AA",
+      "border": "#27272A",
+      "text_primary": "#FAFAFA",
+      "text_secondary": "#A1A1AA"
+    },
+    "gradients": {
+      "threat_glow": "radial-gradient(circle at center, rgba(239, 68, 68, 0.15) 0%, transparent 70%)",
+      "safe_glow": "radial-gradient(circle at center, rgba(16, 185, 129, 0.15) 0%, transparent 70%)",
+      "scan_line": "linear-gradient(to bottom, transparent, rgba(16, 185, 129, 0.5), transparent)"
+    }
+  },
+  "typography": {
+    "headings": {
+      "family": "Chivo, sans-serif",
+      "weights": ["700", "900"],
+      "tracking": "tracking-tight"
+    },
+    "body": {
+      "family": "Inter, sans-serif",
+      "weights": ["400", "500"]
+    },
+    "mono": {
+      "family": "JetBrains Mono, monospace",
+      "usage": "All data points, IP addresses, logs, and timestamps."
+    }
+  },
+  "layout": {
+    "grid_system": "Bento Grid (Mode B - High Density)",
+    "spacing": {
+      "container_padding": "p-4 md:p-6 lg:p-8",
+      "gap": "gap-4 md:gap-6",
+      "internal_padding": "p-4"
+    },
+    "border_radius": "rounded-none md:rounded-sm",
+    "container_style": "border border-white/10 bg-black/40 backdrop-blur-md"
+  },
+  "components": {
+    "cards": {
+      "style": "Grid Borders",
+      "classes": "bg-card/50 border border-border/50 relative overflow-hidden"
+    },
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm font-mono uppercase tracking-wider text-xs",
+      "secondary": "bg-secondary/10 text-secondary hover:bg-secondary/20 border border-secondary/20 rounded-sm font-mono uppercase tracking-wider text-xs",
+      "ghost": "hover:bg-white/5 text-muted-foreground hover:text-white"
+    },
+    "status_indicators": {
+      "safe": "bg-emerald-500/20 text-emerald-500 border-emerald-500/50",
+      "warning": "bg-amber-500/20 text-amber-500 border-amber-500/50",
+      "danger": "bg-red-500/20 text-red-500 border-red-500/50",
+      "neutral": "bg-zinc-500/20 text-zinc-400 border-zinc-500/50"
+    }
+  },
+  "visual_enhancers": {
+    "textures": [
+      "Subtle noise overlay (opacity 0.03) on the main background.",
+      "Scanline effect on 'Live Monitor' sections."
+    ],
+    "effects": [
+      "Glow: Drop shadow with color on active elements (e.g., shadow-[0_0_15px_rgba(239,68,68,0.5)] for threats).",
+      "Glitch: On the main logo or critical alert headers."
+    ]
+  },
+  "assets": {
+    "icons": "Lucide React (default) or Phosphor Icons (if available)",
+    "images": [
+      {
+        "category": "background_abstract",
+        "url": "https://images.unsplash.com/photo-1753693765800-afdf24bfefaa?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Abstract digital wires, use for Network Monitor background with low opacity overlay."
+      },
+      {
+        "category": "background_code",
+        "url": "https://images.unsplash.com/photo-1759661881353-5b9cc55e1cf4?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "description": "Dark monitor with code, use for Threat Analysis or Logs section background."
+      }
+    ]
+  },
+  "motion": {
+    "reduced_motion": "Respect prefers-reduced-motion",
+    "transitions": "transition-all duration-200 ease-out",
+    "animations": {
+      "scan": "animate-[scan_2s_linear_infinite]",
+      "pulse": "animate-pulse",
+      "ping": "animate-ping"
+    }
+  },
+  "instructions_to_main_agent": {
+    "general": "Build a single-page application (SPA) dashboard. Use React Router if multiple views are strictly necessary, but a dense single-view dashboard is preferred for 'Command Center' feel.",
+    "layout_structure": [
+      "Header: Logo (Glitch effect), System Status (Global Defcon level), User Profile.",
+      "Main Grid:",
+      "  - Col 1 (Left, Narrow): Navigation/Sidebar (Icons only on mobile, expanded on desktop).",
+      "  - Col 2 (Center, Wide):",
+      "    - Row 1: Key Metrics (Threats Blocked, Active Connections, System Health).",
+      "    - Row 2: Main Visual (Network Map or Live Traffic Graph).",
+      "    - Row 3: Recent Detections List (Table).",
+      "  - Col 3 (Right, Medium):",
+      "    - Row 1: AI Analysis Panel (Radar Chart + Text).",
+      "    - Row 2: System Logs (Terminal style scroll).",
+      "    - Row 3: Quick Actions (Scan Now, Update Signatures)."
+    ],
+    "specific_components": [
+      "Use 'Recharts' for the Network Traffic graph (Line chart) and Threat Distribution (Donut chart).",
+      "Use 'Sonner' for toast notifications (e.g., 'Scan Complete', 'Threat Detected').",
+      "Use 'Lucide-React' icons: ShieldAlert, Activity, Network, Terminal, History, Settings.",
+      "Implement a 'Fake' scanning sequence when 'Scan Now' is clicked: Show a progress bar, cycle through random file names, then show results."
+    ]
+  },
+  "universal_guidelines": {
+    "do_not": [
+      "Do NOT use gradients for text.",
+      "Do NOT use rounded corners > 4px (keep it sharp/tactical).",
+      "Do NOT use light mode.",
+      "Do NOT use generic 'Lorem Ipsum' - use realistic security jargon (e.g., 'Trojan.Win32.Generic', 'Suspicious outbound traffic to port 4444')."
+    ],
+    "must": [
+      "MUST use 'data-testid' on all interactive elements.",
+      "MUST ensure high contrast for text.",
+      "MUST make the dashboard responsive (stack columns on mobile)."
+    ]
+  }
+}
