@@ -393,7 +393,7 @@ function App() {
     }, 200);
 
     try {
-      const response = await axios.post(`${API}/scan`);
+      const response = await axios.post(`${API}/system/scan`);
       clearInterval(progressInterval);
       setScanProgress(100);
       
