@@ -14,6 +14,16 @@ import hashlib
 import random
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
+# Import Entropy Engine for Phi-Pi-Entropy based countermeasures
+from entropy_engine import (
+    entropy_engine, 
+    anomaly_detector, 
+    entropic_neutralizer,
+    EntropyEngine,
+    GraphAnomalyDetector,
+    EntropicNeutralizer
+)
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
