@@ -7,23 +7,30 @@ import {
   Activity, 
   Network, 
   Terminal, 
-  History, 
-  Settings,
   Scan,
   AlertTriangle,
   CheckCircle,
   XCircle,
   RefreshCw,
   Cpu,
-  HardDrive,
   Wifi,
   Eye,
-  Zap
+  Zap,
+  Crosshair,
+  Bot,
+  Swords,
+  BookOpen,
+  Target,
+  Shield,
+  Skull,
+  Brain,
+  TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LineChart,
   Line,
@@ -34,23 +41,27 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  BarChart,
+  Bar
 } from "recharts";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 // Stat Card Component
-const StatCard = ({ title, value, icon: Icon, status, subtitle }) => {
+const StatCard = ({ title, value, icon: Icon, status, subtitle, glow }) => {
   const statusColors = {
     safe: "text-emerald-500",
     warning: "text-amber-500",
     danger: "text-red-500",
-    neutral: "text-zinc-400"
+    critical: "text-red-600",
+    neutral: "text-zinc-400",
+    purple: "text-purple-500"
   };
 
   return (
-    <div className="stat-card" data-testid={`stat-card-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+    <div className={`stat-card ${glow ? 'threat-glow' : ''}`} data-testid={`stat-card-${title.toLowerCase().replace(/\s+/g, '-')}`}>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs uppercase tracking-wider text-zinc-500 font-mono">{title}</p>
@@ -59,7 +70,7 @@ const StatCard = ({ title, value, icon: Icon, status, subtitle }) => {
           </p>
           {subtitle && <p className="text-xs text-zinc-500 mt-1">{subtitle}</p>}
         </div>
-        <div className={`p-2 rounded ${status === 'danger' ? 'bg-red-500/20' : status === 'warning' ? 'bg-amber-500/20' : 'bg-zinc-800'}`}>
+        <div className={`p-2 rounded ${status === 'danger' || status === 'critical' ? 'bg-red-500/20' : status === 'warning' ? 'bg-amber-500/20' : status === 'safe' ? 'bg-emerald-500/20' : 'bg-zinc-800'}`}>
           <Icon className={`w-5 h-5 ${statusColors[status] || 'text-zinc-400'}`} />
         </div>
       </div>
@@ -67,8 +78,65 @@ const StatCard = ({ title, value, icon: Icon, status, subtitle }) => {
   );
 };
 
+// War Log Entry Component
+const WarLogEntry = ({ entry }) => {
+  const typeIcons = {
+    detection: <AlertTriangle className="w-3 h-3 text-red-500" />,
+    analysis: <Brain className="w-3 h-3 text-blue-500" />,
+    countermeasure: <Crosshair className="w-3 h-3 text-amber-500" />,
+    mutation: <Skull className="w-3 h-3 text-purple-500" />,
+    eviction: <CheckCircle className="w-3 h-3 text-emerald-500" />,
+    escalation: <Zap className="w-3 h-3 text-orange-500" />,
+    learning: <BookOpen className="w-3 h-3 text-cyan-500" />
+  };
+
+  const typeColors = {
+    detection: "border-l-red-500 bg-red-500/5",
+    analysis: "border-l-blue-500 bg-blue-500/5",
+    countermeasure: "border-l-amber-500 bg-amber-500/5",
+    mutation: "border-l-purple-500 bg-purple-500/5",
+    eviction: "border-l-emerald-500 bg-emerald-500/5",
+    escalation: "border-l-orange-500 bg-orange-500/5",
+    learning: "border-l-cyan-500 bg-cyan-500/5"
+  };
+
+  const timestamp = new Date(entry.timestamp).toLocaleTimeString('en-US', { hour12: false });
+
+  return (
+    <div className={`p-3 border-l-2 mb-2 ${typeColors[entry.event_type] || 'border-l-zinc-500'}`} data-testid={`war-log-${entry.id}`}>
+      <div className="flex items-start gap-2">
+        {typeIcons[entry.event_type]}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-mono text-zinc-500">[{timestamp}]</span>
+            <Badge variant="outline" className="text-[10px] uppercase">{entry.event_type}</Badge>
+            {entry.outcome && (
+              <Badge className={entry.outcome === 'SUCCESS' || entry.outcome === 'EVICTED' ? 'badge-safe' : 'badge-danger'}>
+                {entry.outcome}
+              </Badge>
+            )}
+          </div>
+          <p className="text-sm text-zinc-300">{entry.description}</p>
+          {entry.ai_decision && (
+            <p className="text-xs text-zinc-500 mt-1 italic">AI: {entry.ai_decision}</p>
+          )}
+          {entry.tactics_learned && entry.tactics_learned.length > 0 && (
+            <div className="flex gap-1 mt-1 flex-wrap">
+              {entry.tactics_learned.map((tactic, i) => (
+                <Badge key={i} variant="outline" className="text-[10px] text-cyan-400 border-cyan-400/50">
+                  {tactic}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Detection Row Component
-const DetectionRow = ({ detection, onAnalyze, onUpdateStatus, isAnalyzing }) => {
+const DetectionRow = ({ detection, onAnalyze, isAnalyzing }) => {
   const severityColors = {
     critical: "badge-danger",
     high: "bg-orange-500/20 text-orange-500 border border-orange-500/50",
@@ -78,68 +146,64 @@ const DetectionRow = ({ detection, onAnalyze, onUpdateStatus, isAnalyzing }) => 
 
   const statusColors = {
     active: "badge-danger",
-    resolved: "badge-safe",
+    evicted: "badge-safe",
+    resolved: "bg-blue-500/20 text-blue-500 border border-blue-500/50",
     false_positive: "badge-neutral"
   };
 
   return (
     <tr data-testid={`detection-row-${detection.id}`}>
-      <td className="font-mono text-xs">{detection.threat_name}</td>
+      <td className="font-mono text-xs">
+        {detection.threat_name}
+        {detection.mutation_detected && (
+          <Badge className="ml-2 bg-purple-500/20 text-purple-400 text-[10px]">MUTANT</Badge>
+        )}
+      </td>
       <td>
         <span className={`inline-block px-2 py-0.5 text-xs rounded ${severityColors[detection.severity]}`}>
           {detection.severity}
         </span>
       </td>
-      <td className="text-zinc-400">{detection.detection_type.replace('_', ' ')}</td>
+      <td className="text-zinc-400 text-xs">{detection.detection_type?.replace('_', ' ')}</td>
       <td>
         <span className={`inline-block px-2 py-0.5 text-xs rounded ${statusColors[detection.status]}`}>
           {detection.status}
         </span>
       </td>
       <td className="text-right">
-        <div className="flex gap-2 justify-end">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onAnalyze(detection.id)}
-            disabled={isAnalyzing}
-            data-testid={`analyze-btn-${detection.id}`}
-            className="text-xs hover:bg-emerald-500/20 hover:text-emerald-500"
-          >
-            <Eye className="w-3 h-3 mr-1" />
-            AI Analyze
-          </Button>
-          {detection.status === 'active' && (
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => onUpdateStatus(detection.id, 'resolved')}
-              data-testid={`resolve-btn-${detection.id}`}
-              className="text-xs hover:bg-emerald-500/20 hover:text-emerald-500"
-            >
-              <CheckCircle className="w-3 h-3 mr-1" />
-              Resolve
-            </Button>
-          )}
-        </div>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => onAnalyze(detection.id)}
+          disabled={isAnalyzing || detection.status === 'evicted'}
+          data-testid={`analyze-btn-${detection.id}`}
+          className="text-xs hover:bg-emerald-500/20 hover:text-emerald-500"
+        >
+          <Eye className="w-3 h-3 mr-1" />
+          Analyze
+        </Button>
       </td>
     </tr>
   );
 };
 
-// Log Entry Component
-const LogEntry = ({ timestamp, level, message }) => {
-  const levelColors = {
-    info: "log-info",
-    safe: "log-safe",
-    warning: "log-warning",
-    danger: "log-danger"
-  };
-
+// Countermeasure Card
+const CountermeasureCard = ({ technique, data }) => {
+  const successRate = data.total > 0 ? ((data.success / data.total) * 100).toFixed(0) : 0;
+  
   return (
-    <div className="log-entry mb-1" data-testid="log-entry">
-      <span className="timestamp">[{timestamp}]</span>
-      <span className={levelColors[level]}>{message}</span>
+    <div className="p-3 bg-zinc-900/50 border border-zinc-800 rounded" data-testid={`cm-card-${technique}`}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-mono uppercase text-zinc-400">{technique.replace('_', ' ')}</span>
+        <Badge className={successRate >= 70 ? 'badge-safe' : successRate >= 40 ? 'badge-warning' : 'badge-danger'}>
+          {successRate}%
+        </Badge>
+      </div>
+      <div className="flex items-center gap-2 text-xs text-zinc-500">
+        <span>{data.total} deployed</span>
+        <span>•</span>
+        <span className="text-emerald-500">{data.success} success</span>
+      </div>
     </div>
   );
 };
@@ -148,78 +212,45 @@ const LogEntry = ({ timestamp, level, message }) => {
 function App() {
   const [systemStatus, setSystemStatus] = useState(null);
   const [detections, setDetections] = useState([]);
-  const [connections, setConnections] = useState([]);
+  const [warLog, setWarLog] = useState([]);
   const [stats, setStats] = useState(null);
-  const [logs, setLogs] = useState([]);
+  const [agentState, setAgentState] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
-  const [scanningFile, setScanningFile] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAgentRunning, setIsAgentRunning] = useState(false);
   const [networkData, setNetworkData] = useState([]);
+  const [activeTab, setActiveTab] = useState("overview");
 
-  // Generate fake file names for scanning animation
-  const fakeFiles = [
-    "C:\\Windows\\System32\\ntdll.dll",
-    "C:\\Users\\User\\AppData\\Local\\Temp\\cache.dat",
-    "C:\\Program Files\\Common Files\\services.exe",
-    "C:\\Windows\\SysWOW64\\kernel32.dll",
-    "C:\\Users\\User\\Downloads\\setup.exe",
-    "C:\\Windows\\System32\\drivers\\http.sys",
-    "C:\\ProgramData\\Microsoft\\Crypto\\RSA\\MachineKeys",
-    "C:\\Users\\User\\AppData\\Roaming\\config.ini"
-  ];
-
-  // Add log entry
-  const addLog = useCallback((level, message) => {
-    const now = new Date();
-    const timestamp = now.toLocaleTimeString('en-US', { hour12: false });
-    setLogs(prev => [{timestamp, level, message}, ...prev].slice(0, 100));
-  }, []);
-
-  // Fetch system status
+  // Fetch all data
   const fetchStatus = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/status`);
       setSystemStatus(response.data);
+      setAgentState(response.data.agent_state);
     } catch (e) {
       console.error("Failed to fetch status:", e);
     }
   }, []);
 
-  // Fetch detections
   const fetchDetections = useCallback(async () => {
     try {
-      const response = await axios.get(`${API}/detections`);
+      const response = await axios.get(`${API}/detections?limit=50`);
       setDetections(response.data);
     } catch (e) {
       console.error("Failed to fetch detections:", e);
     }
   }, []);
 
-  // Fetch network connections
-  const fetchConnections = useCallback(async () => {
+  const fetchWarLog = useCallback(async () => {
     try {
-      const response = await axios.get(`${API}/network/connections`);
-      setConnections(response.data);
-      
-      // Generate network data for chart
-      const suspicious = response.data.filter(c => c.is_suspicious).length;
-      const safe = response.data.length - suspicious;
-      
-      setNetworkData(prev => {
-        const newData = [...prev, {
-          time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-          connections: response.data.length,
-          suspicious: suspicious
-        }].slice(-20);
-        return newData;
-      });
+      const response = await axios.get(`${API}/war-log?limit=50`);
+      setWarLog(response.data);
     } catch (e) {
-      console.error("Failed to fetch connections:", e);
+      console.error("Failed to fetch war log:", e);
     }
   }, []);
 
-  // Fetch statistics
   const fetchStats = useCallback(async () => {
     try {
       const response = await axios.get(`${API}/stats`);
@@ -229,119 +260,140 @@ function App() {
     }
   }, []);
 
+  const fetchConnections = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/network/connections`);
+      const suspicious = response.data.filter(c => c.is_suspicious).length;
+      
+      setNetworkData(prev => {
+        const newData = [...prev, {
+          time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+          connections: response.data.length,
+          suspicious: suspicious,
+          blocked: response.data.filter(c => c.blocked).length
+        }].slice(-20);
+        return newData;
+      });
+    } catch (e) {
+      console.error("Failed to fetch connections:", e);
+    }
+  }, []);
+
   // Start scan
-  const startScan = async (scanType = 'full') => {
+  const startScan = async () => {
     setIsScanning(true);
     setScanProgress(0);
-    addLog('info', `Starting ${scanType} system scan...`);
-    toast.info('Scan initiated', { description: 'Scanning system for threats...' });
+    toast.info('Scan initiated', { description: 'Scanning for threats...' });
 
-    // Simulate scanning progress
     const progressInterval = setInterval(() => {
       setScanProgress(prev => {
         if (prev >= 95) {
           clearInterval(progressInterval);
           return prev;
         }
-        return prev + Math.random() * 10;
+        return prev + Math.random() * 15;
       });
-      setScanningFile(fakeFiles[Math.floor(Math.random() * fakeFiles.length)]);
     }, 200);
 
     try {
-      const response = await axios.post(`${API}/scan`, { scan_type: scanType });
+      const response = await axios.post(`${API}/scan`);
       clearInterval(progressInterval);
       setScanProgress(100);
       
       if (response.data.threats_found > 0) {
-        addLog('danger', `ALERT: ${response.data.threats_found} threat(s) detected!`);
         toast.error('Threats Detected!', { 
-          description: `Found ${response.data.threats_found} potential threat(s)` 
+          description: `Found ${response.data.threats_found} threat(s) - Agent engaging...` 
         });
       } else {
-        addLog('safe', 'Scan complete. No threats detected.');
         toast.success('Scan Complete', { description: 'No threats detected' });
       }
 
-      addLog('info', `Scanned ${response.data.items_scanned} items in ${response.data.duration.toFixed(2)}s`);
-      
-      // Refresh data
-      await Promise.all([fetchStatus(), fetchDetections(), fetchStats()]);
+      // Refresh all data
+      await Promise.all([fetchStatus(), fetchDetections(), fetchWarLog(), fetchStats()]);
     } catch (e) {
       clearInterval(progressInterval);
-      addLog('danger', 'Scan failed: ' + e.message);
       toast.error('Scan Failed', { description: e.message });
     } finally {
       setIsScanning(false);
       setScanProgress(0);
-      setScanningFile('');
+    }
+  };
+
+  // Trigger agent manually
+  const triggerAgent = async () => {
+    setIsAgentRunning(true);
+    toast.info('Agent Activated', { description: 'Running countermeasure cycle...' });
+
+    try {
+      const response = await axios.post(`${API}/agent/run`);
+      
+      if (response.data.evicted > 0) {
+        toast.success('Threats Evicted!', { 
+          description: `Successfully evicted ${response.data.evicted} threat(s)` 
+        });
+      } else if (response.data.threats_processed > 0) {
+        toast.warning('Agent Cycle Complete', { 
+          description: `Processed ${response.data.threats_processed} threats` 
+        });
+      } else {
+        toast.info('All Clear', { description: 'No active threats to process' });
+      }
+
+      await Promise.all([fetchStatus(), fetchDetections(), fetchWarLog(), fetchStats()]);
+    } catch (e) {
+      toast.error('Agent Error', { description: e.message });
+    } finally {
+      setIsAgentRunning(false);
     }
   };
 
   // AI Analysis
   const analyzeDetection = async (detectionId) => {
     setIsAnalyzing(true);
-    addLog('info', `Running AI analysis on detection ${detectionId.slice(0, 8)}...`);
-    toast.info('AI Analysis', { description: 'Analyzing threat with AI...' });
+    toast.info('AI Analysis', { description: 'Analyzing threat...' });
 
     try {
       const response = await axios.post(`${API}/detections/${detectionId}/analyze`);
-      addLog('safe', 'AI analysis complete');
       toast.success('Analysis Complete', { 
-        description: response.data.ai_analysis.slice(0, 100) + '...' 
+        description: `Strategy: ${response.data.strategy?.primary_technique || 'determined'}` 
       });
       await fetchDetections();
     } catch (e) {
-      addLog('danger', 'AI analysis failed: ' + e.message);
       toast.error('Analysis Failed', { description: e.message });
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  // Update detection status
-  const updateDetectionStatus = async (detectionId, status) => {
-    try {
-      await axios.patch(`${API}/detections/${detectionId}/status?status=${status}`);
-      addLog('safe', `Detection ${detectionId.slice(0, 8)} marked as ${status}`);
-      toast.success('Status Updated', { description: `Marked as ${status}` });
-      await Promise.all([fetchDetections(), fetchStatus(), fetchStats()]);
-    } catch (e) {
-      toast.error('Update Failed', { description: e.message });
-    }
-  };
-
   // Initial load and polling
   useEffect(() => {
-    addLog('info', 'RAT Detection System initialized');
-    addLog('safe', 'Monitoring active connections...');
-    
     fetchStatus();
     fetchDetections();
-    fetchConnections();
+    fetchWarLog();
     fetchStats();
+    fetchConnections();
 
-    // Poll for updates
-    const statusInterval = setInterval(fetchStatus, 10000);
-    const connectionsInterval = setInterval(fetchConnections, 15000);
+    const interval = setInterval(() => {
+      fetchStatus();
+      fetchWarLog();
+      fetchConnections();
+    }, 10000);
 
-    return () => {
-      clearInterval(statusInterval);
-      clearInterval(connectionsInterval);
-    };
-  }, [addLog, fetchStatus, fetchDetections, fetchConnections, fetchStats]);
+    return () => clearInterval(interval);
+  }, [fetchStatus, fetchDetections, fetchWarLog, fetchStats, fetchConnections]);
 
-  // Pie chart data
-  const threatDistribution = stats ? [
-    { name: 'Active', value: stats.active_threats, color: '#EF4444' },
-    { name: 'Resolved', value: stats.resolved_threats, color: '#10B981' },
-    { name: 'False Positive', value: stats.false_positives, color: '#71717A' }
-  ].filter(d => d.value > 0) : [];
+  // Chart data
+  const techniqueData = stats?.by_technique ? Object.entries(stats.by_technique).map(([name, data]) => ({
+    name: name.replace('_', ' ').slice(0, 10),
+    success: data.success,
+    failed: data.total - data.success
+  })) : [];
 
-  const suspiciousConnections = connections.filter(c => c.is_suspicious);
+  const activeThreats = detections.filter(d => d.status === 'active');
+  const evictedThreats = detections.filter(d => d.status === 'evicted');
 
   return (
-    <div className="App min-h-screen bg-[#09090B]" data-testid="rat-detection-dashboard">
+    <div className="App min-h-screen bg-[#09090B]" data-testid="rat-countermeasure-dashboard">
       <Toaster position="top-right" theme="dark" />
       <div className="noise-overlay" />
       
@@ -349,61 +401,86 @@ function App() {
       <header className="border-b border-white/10 bg-black/40 backdrop-blur-md sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-500/20 rounded">
-              <ShieldAlert className="w-6 h-6 text-red-500" />
+            <div className={`p-2 rounded ${systemStatus?.active_threats > 0 ? 'bg-red-500/20 threat-glow' : 'bg-emerald-500/20'}`}>
+              <Swords className={`w-6 h-6 ${systemStatus?.active_threats > 0 ? 'text-red-500' : 'text-emerald-500'}`} />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight glitch-hover" data-testid="app-title">
-                RAT DETECTION SYSTEM
+              <h1 className="text-lg font-bold tracking-tight" data-testid="app-title">
+                RAT COUNTERMEASURE AGENT
               </h1>
-              <p className="text-xs text-zinc-500 font-mono">v1.0.0 // PASSIVE MONITORING</p>
+              <p className="text-xs text-zinc-500 font-mono">v2.0 // AUTONOMOUS MODE</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            {/* System Status Indicator */}
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded ${
-              systemStatus?.threat_level === 'danger' ? 'bg-red-500/20 border border-red-500/50' :
-              systemStatus?.threat_level === 'warning' ? 'bg-amber-500/20 border border-amber-500/50' :
-              'bg-emerald-500/20 border border-emerald-500/50'
-            }`} data-testid="system-status-indicator">
-              <div className={`w-2 h-2 rounded-full ${
-                systemStatus?.threat_level === 'danger' ? 'bg-red-500 threat-glow' :
-                systemStatus?.threat_level === 'warning' ? 'bg-amber-500 blink' :
-                'bg-emerald-500 safe-glow'
-              }`} />
-              <span className={`text-xs font-mono uppercase ${
-                systemStatus?.threat_level === 'danger' ? 'text-red-500' :
-                systemStatus?.threat_level === 'warning' ? 'text-amber-500' :
-                'text-emerald-500'
-              }`}>
-                {systemStatus?.threat_level || 'LOADING'}
+          <div className="flex items-center gap-3">
+            {/* Agent Status */}
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded border ${
+              agentState?.is_active ? 'bg-emerald-500/10 border-emerald-500/50' : 'bg-zinc-800 border-zinc-700'
+            }`} data-testid="agent-status">
+              <Bot className={`w-4 h-4 ${agentState?.is_active ? 'text-emerald-500' : 'text-zinc-500'}`} />
+              <span className="text-xs font-mono uppercase">
+                {agentState?.mode || 'AUTONOMOUS'}
               </span>
             </div>
 
-            {/* Scan Button */}
+            {/* Threat Level */}
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded ${
+              systemStatus?.threat_level === 'critical' ? 'bg-red-500/20 border border-red-500/50 threat-glow' :
+              systemStatus?.threat_level === 'danger' ? 'bg-red-500/20 border border-red-500/50' :
+              systemStatus?.threat_level === 'warning' ? 'bg-amber-500/20 border border-amber-500/50' :
+              'bg-emerald-500/20 border border-emerald-500/50'
+            }`} data-testid="threat-level">
+              <div className={`w-2 h-2 rounded-full ${
+                systemStatus?.threat_level === 'critical' || systemStatus?.threat_level === 'danger' ? 'bg-red-500 blink' :
+                systemStatus?.threat_level === 'warning' ? 'bg-amber-500' :
+                'bg-emerald-500'
+              }`} />
+              <span className={`text-xs font-mono uppercase ${
+                systemStatus?.threat_level === 'critical' || systemStatus?.threat_level === 'danger' ? 'text-red-500' :
+                systemStatus?.threat_level === 'warning' ? 'text-amber-500' :
+                'text-emerald-500'
+              }`}>
+                {systemStatus?.threat_level || 'SAFE'}
+              </span>
+            </div>
+
+            {/* Action Buttons */}
             <Button
-              onClick={() => startScan('full')}
-              disabled={isScanning}
-              data-testid="scan-now-btn"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-mono text-xs uppercase tracking-wider"
+              onClick={triggerAgent}
+              disabled={isAgentRunning || isScanning}
+              data-testid="trigger-agent-btn"
+              className="bg-purple-600 hover:bg-purple-700 text-white font-mono text-xs uppercase"
+            >
+              {isAgentRunning ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Crosshair className="w-4 h-4 mr-2" />
+              )}
+              ENGAGE
+            </Button>
+
+            <Button
+              onClick={startScan}
+              disabled={isScanning || isAgentRunning}
+              data-testid="scan-btn"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-mono text-xs uppercase"
             >
               {isScanning ? (
                 <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Scan className="w-4 h-4 mr-2" />
               )}
-              {isScanning ? 'SCANNING...' : 'SCAN NOW'}
+              SCAN
             </Button>
           </div>
         </div>
 
-        {/* Scan Progress Bar */}
-        {isScanning && (
+        {/* Progress Bar */}
+        {(isScanning || isAgentRunning) && (
           <div className="px-4 pb-3">
-            <Progress value={scanProgress} className="h-1 bg-zinc-800" />
-            <p className="text-xs font-mono text-zinc-500 mt-1 truncate">
-              Scanning: {scanningFile}
+            <Progress value={isScanning ? scanProgress : 50} className="h-1 bg-zinc-800" />
+            <p className="text-xs font-mono text-zinc-500 mt-1">
+              {isScanning ? 'Scanning system...' : 'Agent processing threats...'}
             </p>
           </div>
         )}
@@ -412,278 +489,313 @@ function App() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <StatCard
             title="Active Threats"
             value={systemStatus?.active_threats || 0}
             icon={AlertTriangle}
             status={systemStatus?.active_threats > 0 ? 'danger' : 'safe'}
-            subtitle="Requires attention"
+            subtitle="Requires action"
+            glow={systemStatus?.active_threats > 0}
           />
           <StatCard
-            title="Total Detections"
-            value={stats?.total_detections || 0}
-            icon={ShieldAlert}
-            status="neutral"
-            subtitle="All time"
+            title="Evicted"
+            value={systemStatus?.evicted_threats || 0}
+            icon={Shield}
+            status="safe"
+            subtitle="Successfully removed"
           />
           <StatCard
-            title="Active Connections"
-            value={systemStatus?.active_connections || 0}
-            icon={Wifi}
-            status={suspiciousConnections.length > 0 ? 'warning' : 'neutral'}
-            subtitle={`${suspiciousConnections.length} suspicious`}
+            title="Mutations"
+            value={systemStatus?.mutations_detected || 0}
+            icon={Skull}
+            status={systemStatus?.mutations_detected > 0 ? 'purple' : 'neutral'}
+            subtitle="Variants detected"
           />
           <StatCard
-            title="System Health"
-            value={`${systemStatus?.cpu_usage || 0}%`}
-            icon={Cpu}
-            status={systemStatus?.cpu_usage > 80 ? 'warning' : 'safe'}
-            subtitle={`Memory: ${systemStatus?.memory_usage || 0}%`}
+            title="Countermeasures"
+            value={systemStatus?.countermeasures_deployed || 0}
+            icon={Crosshair}
+            status="warning"
+            subtitle="Actions taken"
+          />
+          <StatCard
+            title="Success Rate"
+            value={`${stats?.success_rate?.toFixed(0) || 0}%`}
+            icon={TrendingUp}
+            status={stats?.success_rate >= 70 ? 'safe' : stats?.success_rate >= 40 ? 'warning' : 'danger'}
+            subtitle="Eviction rate"
           />
         </div>
 
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Network Monitor */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Network Traffic Chart */}
-            <div className="card-tactical p-4 scanlines" data-testid="network-chart">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Network className="w-4 h-4 text-emerald-500" />
-                  <h2 className="text-sm font-bold uppercase tracking-wider">Network Activity</h2>
-                </div>
-                <Button variant="ghost" size="sm" onClick={fetchConnections} className="text-xs">
-                  <RefreshCw className="w-3 h-3 mr-1" /> Refresh
-                </Button>
-              </div>
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={networkData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
-                    <XAxis dataKey="time" stroke="#71717A" fontSize={10} />
-                    <YAxis stroke="#71717A" fontSize={10} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        background: '#18181B', 
-                        border: '1px solid #27272A',
-                        borderRadius: '4px',
-                        fontSize: '12px'
-                      }} 
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="connections" 
-                      stroke="#10B981" 
-                      strokeWidth={2}
-                      dot={false}
-                      name="Total"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="suspicious" 
-                      stroke="#EF4444" 
-                      strokeWidth={2}
-                      dot={false}
-                      name="Suspicious"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-zinc-900 border border-zinc-800">
+            <TabsTrigger value="overview" className="font-mono text-xs" data-testid="tab-overview">
+              <Activity className="w-3 h-3 mr-1" /> Overview
+            </TabsTrigger>
+            <TabsTrigger value="warlog" className="font-mono text-xs" data-testid="tab-warlog">
+              <BookOpen className="w-3 h-3 mr-1" /> War Log
+            </TabsTrigger>
+            <TabsTrigger value="detections" className="font-mono text-xs" data-testid="tab-detections">
+              <Target className="w-3 h-3 mr-1" /> Detections
+            </TabsTrigger>
+            <TabsTrigger value="tactics" className="font-mono text-xs" data-testid="tab-tactics">
+              <Brain className="w-3 h-3 mr-1" /> Tactics
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Detections Table */}
-            <div className="card-tactical p-4" data-testid="detections-table">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-500" />
-                  <h2 className="text-sm font-bold uppercase tracking-wider">Recent Detections</h2>
-                </div>
-                <Badge variant="outline" className="font-mono text-xs">
-                  {detections.length} items
-                </Badge>
-              </div>
-              
-              {detections.length > 0 ? (
-                <ScrollArea className="h-64">
-                  <table className="detection-table">
-                    <thead>
-                      <tr>
-                        <th>Threat</th>
-                        <th>Severity</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th className="text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detections.map(detection => (
-                        <DetectionRow
-                          key={detection.id}
-                          detection={detection}
-                          onAnalyze={analyzeDetection}
-                          onUpdateStatus={updateDetectionStatus}
-                          isAnalyzing={isAnalyzing}
-                        />
-                      ))}
-                    </tbody>
-                  </table>
-                </ScrollArea>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
-                  <CheckCircle className="w-12 h-12 mb-3 text-emerald-500/50" />
-                  <p className="font-mono text-sm">No threats detected</p>
-                  <p className="text-xs mt-1">System is clean</p>
-                </div>
-              )}
-            </div>
-
-            {/* Suspicious Connections */}
-            {suspiciousConnections.length > 0 && (
-              <div className="card-tactical p-4 border-red-500/30" data-testid="suspicious-connections">
-                <div className="flex items-center gap-2 mb-4">
-                  <Zap className="w-4 h-4 text-red-500" />
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-red-500">
-                    Suspicious Connections
-                  </h2>
-                </div>
-                <ScrollArea className="h-32">
-                  <div className="space-y-2">
-                    {suspiciousConnections.map(conn => (
-                      <div 
-                        key={conn.id} 
-                        className="flex items-center justify-between p-2 bg-red-500/10 rounded border border-red-500/20"
-                        data-testid={`suspicious-conn-${conn.id}`}
-                      >
-                        <div className="font-mono text-xs">
-                          <span className="text-zinc-400">{conn.local_address}</span>
-                          <span className="text-zinc-600 mx-2">→</span>
-                          <span className="text-red-400">{conn.remote_address}:{conn.remote_port}</span>
-                        </div>
-                        <Badge className="badge-danger text-xs">{conn.process_name}</Badge>
-                      </div>
-                    ))}
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Network Activity */}
+              <div className="lg:col-span-2 card-tactical p-4" data-testid="network-chart">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Network className="w-4 h-4 text-emerald-500" />
+                    <h2 className="text-sm font-bold uppercase tracking-wider">Network Activity</h2>
                   </div>
-                </ScrollArea>
-              </div>
-            )}
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Threat Distribution */}
-            {threatDistribution.length > 0 && (
-              <div className="card-tactical p-4" data-testid="threat-distribution">
-                <div className="flex items-center gap-2 mb-4">
-                  <Activity className="w-4 h-4 text-amber-500" />
-                  <h2 className="text-sm font-bold uppercase tracking-wider">Threat Distribution</h2>
                 </div>
                 <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={threatDistribution}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={70}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {threatDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        contentStyle={{ 
-                          background: '#18181B', 
-                          border: '1px solid #27272A',
-                          borderRadius: '4px',
-                          fontSize: '12px'
-                        }} 
-                      />
-                    </PieChart>
+                    <LineChart data={networkData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
+                      <XAxis dataKey="time" stroke="#71717A" fontSize={10} />
+                      <YAxis stroke="#71717A" fontSize={10} />
+                      <Tooltip contentStyle={{ background: '#18181B', border: '1px solid #27272A', fontSize: '12px' }} />
+                      <Line type="monotone" dataKey="connections" stroke="#10B981" strokeWidth={2} dot={false} name="Total" />
+                      <Line type="monotone" dataKey="suspicious" stroke="#EF4444" strokeWidth={2} dot={false} name="Suspicious" />
+                      <Line type="monotone" dataKey="blocked" stroke="#8B5CF6" strokeWidth={2} dot={false} name="Blocked" />
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="flex justify-center gap-4 mt-2">
-                  {threatDistribution.map(item => (
-                    <div key={item.name} className="flex items-center gap-2 text-xs">
-                      <div className="w-2 h-2 rounded-full" style={{ background: item.color }} />
-                      <span className="text-zinc-400">{item.name}: {item.value}</span>
-                    </div>
-                  ))}
-                </div>
               </div>
-            )}
 
-            {/* Quick Actions */}
-            <div className="card-tactical p-4" data-testid="quick-actions">
-              <div className="flex items-center gap-2 mb-4">
-                <Settings className="w-4 h-4 text-zinc-400" />
-                <h2 className="text-sm font-bold uppercase tracking-wider">Quick Actions</h2>
-              </div>
-              <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start text-xs font-mono bg-transparent border-zinc-800 hover:bg-zinc-800"
-                  onClick={() => startScan('quick')}
-                  disabled={isScanning}
-                  data-testid="quick-scan-btn"
-                >
-                  <Scan className="w-4 h-4 mr-2 text-emerald-500" />
-                  Quick Scan
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start text-xs font-mono bg-transparent border-zinc-800 hover:bg-zinc-800"
-                  onClick={fetchConnections}
-                  data-testid="refresh-connections-btn"
-                >
-                  <Network className="w-4 h-4 mr-2 text-blue-500" />
-                  Refresh Connections
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start text-xs font-mono bg-transparent border-zinc-800 hover:bg-zinc-800"
-                  onClick={() => {
-                    fetchStatus();
-                    fetchStats();
-                    toast.success('Status refreshed');
-                  }}
-                  data-testid="refresh-status-btn"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2 text-amber-500" />
-                  Refresh Status
-                </Button>
+              {/* Agent Stats */}
+              <div className="card-tactical p-4" data-testid="agent-stats">
+                <div className="flex items-center gap-2 mb-4">
+                  <Bot className="w-4 h-4 text-purple-500" />
+                  <h2 className="text-sm font-bold uppercase tracking-wider">Agent Status</h2>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-500">Mode</span>
+                    <Badge className="bg-purple-500/20 text-purple-400">{agentState?.mode || 'AUTONOMOUS'}</Badge>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-500">Learning Iterations</span>
+                    <span className="font-mono text-cyan-400">{agentState?.learning_iterations || 0}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-500">Tactics Learned</span>
+                    <span className="font-mono text-cyan-400">{stats?.agent_tactics_learned || 0}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-zinc-500">Last Action</span>
+                    <span className="font-mono text-xs text-zinc-400 truncate max-w-[150px]">
+                      {agentState?.last_action || 'Idle'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* System Logs */}
-            <div className="card-tactical" data-testid="system-logs">
-              <div className="flex items-center gap-2 p-4 border-b border-white/10">
-                <Terminal className="w-4 h-4 text-emerald-500" />
-                <h2 className="text-sm font-bold uppercase tracking-wider">System Log</h2>
+            {/* Recent War Log Preview */}
+            <div className="card-tactical p-4" data-testid="recent-warlog">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Swords className="w-4 h-4 text-amber-500" />
+                  <h2 className="text-sm font-bold uppercase tracking-wider">Recent Battle Activity</h2>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setActiveTab('warlog')} className="text-xs">
+                  View All
+                </Button>
               </div>
               <ScrollArea className="h-64">
-                <div className="terminal-log">
-                  {logs.map((log, idx) => (
-                    <LogEntry key={idx} {...log} />
-                  ))}
-                  {logs.length === 0 && (
-                    <div className="text-zinc-500 terminal-cursor">Awaiting input...</div>
-                  )}
-                </div>
+                {warLog.slice(0, 10).map(entry => (
+                  <WarLogEntry key={entry.id} entry={entry} />
+                ))}
+                {warLog.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-8 text-zinc-500">
+                    <Shield className="w-8 h-8 mb-2 text-emerald-500/50" />
+                    <p className="text-sm font-mono">No battle activity yet</p>
+                  </div>
+                )}
               </ScrollArea>
             </div>
-          </div>
-        </div>
+          </TabsContent>
+
+          {/* War Log Tab */}
+          <TabsContent value="warlog" className="space-y-6">
+            <div className="card-tactical p-4" data-testid="full-warlog">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-amber-500" />
+                  <h2 className="text-sm font-bold uppercase tracking-wider">Complete War Log</h2>
+                </div>
+                <Badge variant="outline" className="font-mono text-xs">
+                  {warLog.length} entries
+                </Badge>
+              </div>
+              <ScrollArea className="h-[600px]">
+                {warLog.map(entry => (
+                  <WarLogEntry key={entry.id} entry={entry} />
+                ))}
+                {warLog.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
+                    <Shield className="w-12 h-12 mb-3 text-emerald-500/50" />
+                    <p className="font-mono">No battle history</p>
+                    <p className="text-xs mt-1">Run a scan to detect threats</p>
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          </TabsContent>
+
+          {/* Detections Tab */}
+          <TabsContent value="detections" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Active Threats */}
+              <div className="card-tactical p-4" data-testid="active-threats">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <h2 className="text-sm font-bold uppercase tracking-wider">Active Threats</h2>
+                  </div>
+                  <Badge className="badge-danger">{activeThreats.length}</Badge>
+                </div>
+                <ScrollArea className="h-80">
+                  {activeThreats.length > 0 ? (
+                    <table className="detection-table">
+                      <thead>
+                        <tr>
+                          <th>Threat</th>
+                          <th>Severity</th>
+                          <th>Type</th>
+                          <th>Status</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {activeThreats.map(detection => (
+                          <DetectionRow
+                            key={detection.id}
+                            detection={detection}
+                            onAnalyze={analyzeDetection}
+                            isAnalyzing={isAnalyzing}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
+                      <CheckCircle className="w-12 h-12 mb-3 text-emerald-500/50" />
+                      <p className="font-mono">No active threats</p>
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+
+              {/* Evicted Threats */}
+              <div className="card-tactical p-4" data-testid="evicted-threats">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-emerald-500" />
+                    <h2 className="text-sm font-bold uppercase tracking-wider">Evicted Threats</h2>
+                  </div>
+                  <Badge className="badge-safe">{evictedThreats.length}</Badge>
+                </div>
+                <ScrollArea className="h-80">
+                  {evictedThreats.length > 0 ? (
+                    <table className="detection-table">
+                      <thead>
+                        <tr>
+                          <th>Threat</th>
+                          <th>Severity</th>
+                          <th>Type</th>
+                          <th>Status</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {evictedThreats.map(detection => (
+                          <DetectionRow
+                            key={detection.id}
+                            detection={detection}
+                            onAnalyze={analyzeDetection}
+                            isAnalyzing={isAnalyzing}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
+                      <Target className="w-12 h-12 mb-3 text-zinc-700" />
+                      <p className="font-mono">No evictions yet</p>
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Tactics Tab */}
+          <TabsContent value="tactics" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Countermeasure Effectiveness */}
+              <div className="card-tactical p-4" data-testid="cm-effectiveness">
+                <div className="flex items-center gap-2 mb-4">
+                  <Crosshair className="w-4 h-4 text-amber-500" />
+                  <h2 className="text-sm font-bold uppercase tracking-wider">Countermeasure Effectiveness</h2>
+                </div>
+                {techniqueData.length > 0 ? (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={techniqueData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="#27272A" />
+                        <XAxis type="number" stroke="#71717A" fontSize={10} />
+                        <YAxis dataKey="name" type="category" stroke="#71717A" fontSize={10} width={80} />
+                        <Tooltip contentStyle={{ background: '#18181B', border: '1px solid #27272A', fontSize: '12px' }} />
+                        <Bar dataKey="success" stackId="a" fill="#10B981" name="Success" />
+                        <Bar dataKey="failed" stackId="a" fill="#EF4444" name="Failed" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-zinc-500">
+                    <Brain className="w-12 h-12 mb-3 text-zinc-700" />
+                    <p className="font-mono">No tactics data yet</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Technique Cards */}
+              <div className="card-tactical p-4" data-testid="technique-cards">
+                <div className="flex items-center gap-2 mb-4">
+                  <Brain className="w-4 h-4 text-cyan-500" />
+                  <h2 className="text-sm font-bold uppercase tracking-wider">Techniques by Success</h2>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {stats?.by_technique && Object.entries(stats.by_technique).map(([technique, data]) => (
+                    <CountermeasureCard key={technique} technique={technique} data={data} />
+                  ))}
+                  {(!stats?.by_technique || Object.keys(stats.by_technique).length === 0) && (
+                    <div className="col-span-2 flex flex-col items-center justify-center py-8 text-zinc-500">
+                      <Crosshair className="w-8 h-8 mb-2 text-zinc-700" />
+                      <p className="font-mono text-sm">No techniques deployed</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Footer */}
       <footer className="border-t border-white/10 mt-8 py-4">
         <div className="container mx-auto px-4 flex items-center justify-between text-xs text-zinc-500 font-mono">
-          <span>RAT DETECTION SYSTEM // PASSIVE MONITORING</span>
+          <span>RAT COUNTERMEASURE AGENT // AUTONOMOUS DEFENSE</span>
           <span>Last update: {new Date().toLocaleTimeString()}</span>
         </div>
       </footer>
