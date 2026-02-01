@@ -1240,12 +1240,7 @@ async def get_entropy_stats():
         "neutralization_stats": neutralization_stats,
         "average_threat_entropy": avg_entropy,
         "flood_history_count": len(entropy_engine.flood_history),
-        "theorem": {
-            "formula": "[REDACTED])",
-            "phi": 1.618033988749895,
-            "r_value": 4.0,
-            "description": "entropy-based with r=4.0 logistic chaos for conjugate inversion"
-        }
+        "engine_active": True
     }
 
 @api_router.post("/entropy/analyze-pattern")
