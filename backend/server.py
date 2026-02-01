@@ -1007,8 +1007,7 @@ async def scan_endpoint(request: ScanRequest):
         "risk_score": round(total_risk_score, 4),
         "entropy_threshold": request.entropy_threshold,
         "total_scanned": len(active_threats) + (1 if request.log_file else 0),
-        "theorem_seed": "[CLASSIFIED]",
-        "decay_traces": decay_traces[:20]  # Limit traces
+        "decay_traces": decay_traces[:20]
     }
 
 @api_router.post("/disintegrate")
