@@ -931,7 +931,7 @@ async def scan_endpoint(request: ScanRequest):
     
     Response:
         anomalies: array of trojan signatures (high-entropy OOD inputs)
-        risk_score: float (0-1, based on S(n) simulation)
+        risk_score: float (0-1, based on entropy analysis)
     """
     # Update threshold if provided
     original_threshold = anomaly_detector.anomaly_threshold
