@@ -246,7 +246,7 @@ function App() {
   // Run entropy scan
   const runEntropyScan = async () => {
     setIsScanning(true);
-    toast.info('Entropy Scan', { description: 'Analyzing threats with Φ-π formula...' });
+    toast.info('Entropy Scan', { description: 'Running entropy analysis...' });
     try {
       const response = await axios.post(`${API}/entropy/scan`);
       setEntropyScanResults(response.data);
@@ -929,22 +929,22 @@ function App() {
           <TabsContent value="entropy" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Entropy Formula Display */}
-              <div className="lg:col-span-2 card-tactical p-4 border-cyan-500/30" data-testid="entropy-formula">
+              <div className="lg:col-span-2 card-tactical p-4 border-cyan-500/30" data-testid="entropy-engine">
                 <div className="flex items-center gap-2 mb-4">
                   <Atom className="w-4 h-4 text-cyan-500" />
                   <h2 className="text-sm font-bold uppercase tracking-wider">Phi-Pi-Entropy Engine</h2>
                 </div>
                 <div className="bg-black/50 p-4 rounded border border-cyan-500/20 mb-4">
                   <p className="font-mono text-cyan-400 text-sm mb-2">Core Formula:</p>
-                  <p className="font-mono text-lg text-white">S(n) ≈ Φ · S(n-1) + (π / ln n) · e<sup>-n/ln(n+2)</sup></p>
+                  <p className="font-mono text-lg text-white">[ENTROPY ENGINE ACTIVE]</p>
                   <div className="grid grid-cols-3 gap-4 mt-4 text-xs">
                     <div>
-                      <span className="text-zinc-500">Φ (Golden Ratio)</span>
-                      <p className="font-mono text-amber-400">1.618033989</p>
+                      <span className="text-zinc-500">Coefficient α</span>
+                      <p className="font-mono text-amber-400">[CLASSIFIED]</p>
                     </div>
                     <div>
                       <span className="text-zinc-500">π (Pi)</span>
-                      <p className="font-mono text-purple-400">3.141592654</p>
+                      <p className="font-mono text-purple-400">[CLASSIFIED]</p>
                     </div>
                     <div>
                       <span className="text-zinc-500">r (Chaos)</span>
@@ -1096,7 +1096,7 @@ function App() {
       {/* Footer */}
       <footer className="border-t border-white/10 mt-8 py-4">
         <div className="container mx-auto px-4 flex items-center justify-between text-xs text-zinc-500 font-mono">
-          <span>RAT COUNTERMEASURE AGENT // AUTONOMOUS DEFENSE // Φ-π-ENTROPY</span>
+          <span>RAT COUNTERMEASURE AGENT // AUTONOMOUS DEFENSE // ENTROPY ENGINE</span>
           <span>Last update: {new Date().toLocaleTimeString()}</span>
         </div>
       </footer>
