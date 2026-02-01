@@ -107,7 +107,7 @@ COUNTERMEASURE_TECHNIQUES = {
     },
     "entropic_flood_poetic": {
         "name": "Entropic Flood (Poetic)",
-        "description": "Phi-Pi-Entropy chaos flood with conjugate inversion for entropy cancellation",
+        "description": "entropy-based chaos flood with conjugate inversion for entropy cancellation",
         "risk_level": "none",
         "effectiveness": 0.88
     },
@@ -208,7 +208,7 @@ Available techniques:
 4. process_termination - Kill RAT process
 5. memory_corruption - Corrupt RAT memory space
 6. decoy_deployment - Deploy honeypots to confuse
-7. entropic_flood_poetic - Phi-Pi-Entropy chaos flood with conjugate inversion (best for single threats, uses S(n)≈Φ·S(n-1)+(π/ln n)·e^(-n/ln(n+2)) formula)
+7. entropic_flood_poetic - entropy-based chaos flood with conjugate inversion (best for single threats, uses [REDACTED]) formula)
 8. entropic_flood_brute - Triple chaos assault with r=4.0 logistic map (best for mutations, replicating threats, or stubborn RATs)
 
 Consider:
@@ -424,13 +424,13 @@ async def execute_countermeasure(technique: str, threat: dict) -> dict:
             "rat_confused": success
         }
     elif technique == "entropic_flood_poetic":
-        # Use the Phi-Pi-Entropy engine for poetic mode disintegration
+        # Use the entropy-based engine for poetic mode disintegration
         disintegration = entropic_neutralizer.disintegrate(threat, mode="poetic")
         success = disintegration["success"]
         result["success"] = success
         result["details"] = {
             "mode": "poetic",
-            "formula": "S(n) ≈ Φ·S(n-1) + (π/ln n)·e^(-n/ln(n+2))",
+            "formula": "[REDACTED])",
             "initial_entropy": disintegration["initial_entropy"],
             "flood_energy": disintegration["flood_energy"],
             "entropy_delta": disintegration["entropy_delta"],
@@ -439,7 +439,7 @@ async def execute_countermeasure(technique: str, threat: dict) -> dict:
             "chaos_seed": disintegration["signature"]
         }
     elif technique == "entropic_flood_brute":
-        # Use the Phi-Pi-Entropy engine for brute mode disintegration
+        # Use the entropy-based engine for brute mode disintegration
         disintegration = entropic_neutralizer.disintegrate(threat, mode="brute")
         success = disintegration["success"]
         result["success"] = success
@@ -881,7 +881,7 @@ class DisintegrateRequest(BaseModel):
 async def scan_endpoint(request: ScanRequest):
     """
     POST /scan - Spec-compliant endpoint
-    Scans system logs for trojan signatures using Phi-Pi-Entropy formula.
+    Scans system logs for trojan signatures using entropy-based formula.
     
     Params:
         log_file: string (path to system logs) - optional, uses DB threats if not provided
@@ -965,7 +965,7 @@ async def scan_endpoint(request: ScanRequest):
         "risk_score": round(total_risk_score, 4),
         "entropy_threshold": request.entropy_threshold,
         "total_scanned": len(active_threats) + (1 if request.log_file else 0),
-        "theorem_seed": "S(n) ≈ Φ · S(n-1) + (π / ln n) · e^(-n / ln(n+2)); r=4.0 for conjugate inversion",
+        "theorem_seed": "[CLASSIFIED]",
         "decay_traces": decay_traces[:20]  # Limit traces
     }
 
@@ -1145,7 +1145,7 @@ async def disintegrate_endpoint(request: DisintegrateRequest):
         "target_sig": target_sig,
         "prune_mode": prune_mode,
         "threat_name": detection.get("threat_name"),
-        "theorem_applied": "S(n) ≈ Φ · S(n-1) + (π / ln n) · e^(-n / ln(n+2)); r=4.0"
+        "theorem_applied": "[CLASSIFIED]"
     }
 
 # ============== LEGACY ENTROPY ENDPOINTS (kept for compatibility) ==============
@@ -1201,10 +1201,10 @@ async def get_entropy_stats():
         "average_threat_entropy": avg_entropy,
         "flood_history_count": len(entropy_engine.flood_history),
         "theorem": {
-            "formula": "S(n) ≈ Φ·S(n-1) + (π/ln n)·e^(-n/ln(n+2))",
+            "formula": "[REDACTED])",
             "phi": 1.618033988749895,
             "r_value": 4.0,
-            "description": "Phi-Pi-Entropy with r=4.0 logistic chaos for conjugate inversion"
+            "description": "entropy-based with r=4.0 logistic chaos for conjugate inversion"
         }
     }
 
