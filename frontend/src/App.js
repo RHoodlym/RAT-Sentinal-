@@ -932,7 +932,7 @@ function App() {
               <div className="lg:col-span-2 card-tactical p-4 border-cyan-500/30" data-testid="entropy-engine">
                 <div className="flex items-center gap-2 mb-4">
                   <Atom className="w-4 h-4 text-cyan-500" />
-                  <h2 className="text-sm font-bold uppercase tracking-wider">Phi-Pi-Entropy Engine</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-wider">Entropy Engine</h2>
                 </div>
                 <div className="bg-black/50 p-4 rounded border border-cyan-500/20 mb-4">
                   <p className="font-mono text-cyan-400 text-sm mb-2">Core Formula:</p>
