@@ -1,26 +1,22 @@
 """
 Entropy-Based Threat Detection & Neutralization Module
-Based on Phi-Pi-Entropy theorem for chaos-based countermeasures
-
-Formula: S(n) ≈ Φ · S(n-1) + (π / ln n) · e^(-n / ln(n+2))
-Uses r=4.0 logistic map for conjugate inversion (entropic flood)
+Autonomous countermeasure system with escalating response protocol
 """
 
-import sympy as sp
-import networkx as nx
 import math
 import hashlib
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from datetime import datetime, timezone
 import random
 
-# Theorem constants
-PHI = (1 + math.sqrt(5)) / 2  # Golden ratio ≈ 1.618
-PI = math.pi
+# Core constants (internal use only)
+_PHI = (1 + math.sqrt(5)) / 2
+_PI = math.pi
+_R = 4.0
 
 class EntropyEngine:
     """
-    Phi-Pi-Entropy based threat analysis and neutralization engine.
+    Entropy-based threat analysis and neutralization engine.
     Uses chaos theory and entropy scoring for advanced threat detection.
     """
     
@@ -30,130 +26,63 @@ class EntropyEngine:
         self.neutralization_count = 0
         
     def compute_entropy_score(self, n: int, s_prev: float = 1.0) -> float:
-        """
-        Compute entropy score using Phi-Pi-Entropy formula:
-        S(n) ≈ Φ · S(n-1) + (π / ln n) · e^(-n / ln(n+2))
-        
-        Args:
-            n: Current step/index in sequence
-            s_prev: Previous entropy score (default 1.0)
-            
-        Returns:
-            Entropy score as float
-        """
+        """Compute entropy score using recursive dampening."""
         if n == 0:
             return s_prev
         
-        # Avoid log(0) and log(1) issues
         n_safe = max(n, 2)
         ln_n = math.log(n_safe)
         ln_n_plus_2 = math.log(n_safe + 2)
         
-        # Exponential decay term
         decay = math.exp(-n_safe / ln_n_plus_2)
+        pi_term = (_PI / ln_n) * decay
+        entropy = _PHI * s_prev + pi_term
         
-        # Pi-scaled chaos term
-        pi_term = (PI / ln_n) * decay
-        
-        # Phi recursive accumulation
-        entropy = PHI * s_prev + pi_term
-        
-        # Normalize to 0-1 range with sigmoid
         normalized = 1 / (1 + math.exp(-entropy + 2))
-        
         return normalized
     
     def compute_sequence_entropy(self, data: str, window_size: int = 10) -> List[float]:
-        """
-        Compute rolling entropy scores for a data sequence.
-        
-        Args:
-            data: Input data string (log data, process info, etc.)
-            window_size: Size of rolling window
-            
-        Returns:
-            List of entropy scores
-        """
+        """Compute rolling entropy scores for a data sequence."""
         tokens = data.split() if isinstance(data, str) else data
         scores = []
         s_prev = 1.0
         
         for i, token in enumerate(tokens):
-            # Add token hash influence
             token_hash = hash(token) % 1000 / 1000.0
             s_n = self.compute_entropy_score(i + 1, s_prev)
-            
-            # Blend with token-specific entropy
             blended = (s_n * 0.7) + (token_hash * 0.3)
             scores.append(blended)
             s_prev = s_n
             
         return scores
     
-    def logistic_map(self, x: float, r: float = 4.0) -> float:
-        """
-        Logistic map function: x_n+1 = r * x_n * (1 - x_n)
-        r=4.0 produces fully chaotic behavior
-        """
+    def logistic_map(self, x: float, r: float = _R) -> float:
+        """Logistic map for chaotic sequence generation."""
         return r * x * (1 - x)
     
     def generate_chaos_sequence(self, seed: float, steps: int = 100) -> List[float]:
-        """
-        Generate chaotic sequence using r=4.0 logistic map.
-        
-        Args:
-            seed: Initial value (0 < seed < 1)
-            steps: Number of iterations
-            
-        Returns:
-            List of chaotic values
-        """
-        # Ensure seed is in valid range
+        """Generate chaotic sequence for neutralization."""
         x = max(0.001, min(0.999, seed))
         sequence = []
         
         for _ in range(steps):
-            x = self.logistic_map(x, r=4.0)
+            x = self.logistic_map(x)
             sequence.append(x)
             
         return sequence
     
     def conjugate_inversion(self, sequence: List[float]) -> List[float]:
-        """
-        Apply conjugate inversion: reverse and take complement (1 - x).
-        This creates the "backward chaos flood" for entropy cancellation.
-        
-        Args:
-            sequence: Forward chaos sequence
-            
-        Returns:
-            Inverted sequence for neutralization
-        """
+        """Apply conjugate inversion for entropy cancellation."""
         return [1 - x for x in reversed(sequence)]
     
     def generate_entropic_flood(self, signature: str, intensity: int = 100) -> Dict:
-        """
-        Generate entropic flood for threat neutralization.
-        Uses signature hash as chaos seed, applies conjugate inversion.
-        
-        Args:
-            signature: Threat signature (hash, name, etc.)
-            intensity: Flood intensity (number of chaos iterations)
-            
-        Returns:
-            Flood data with sequence and metrics
-        """
-        # Generate seed from signature hash
+        """Generate entropic flood for threat neutralization."""
         sig_hash = hashlib.sha256(signature.encode()).hexdigest()
-        seed = int(sig_hash[:8], 16) / (16**8)  # Normalize to 0-1
+        seed = int(sig_hash[:8], 16) / (16**8)
         
-        # Generate forward chaos
         forward_chaos = self.generate_chaos_sequence(seed, intensity)
-        
-        # Apply conjugate inversion
         inverted_flood = self.conjugate_inversion(forward_chaos)
         
-        # Calculate flood metrics
         flood_energy = sum(inverted_flood)
         flood_variance = sum((x - 0.5)**2 for x in inverted_flood) / len(inverted_flood)
         
@@ -164,7 +93,7 @@ class EntropyEngine:
             "flood_energy": flood_energy,
             "flood_variance": flood_variance,
             "peak_amplitude": max(inverted_flood),
-            "sequence_sample": inverted_flood[:10],  # First 10 values
+            "sequence_sample": inverted_flood[:10],
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
@@ -173,94 +102,67 @@ class EntropyEngine:
 
 
 class GraphAnomalyDetector:
-    """
-    Graph-based anomaly detection using entropy scoring.
-    Models threats as nodes in a network with entropy-weighted edges.
-    """
+    """Graph-based anomaly detection using entropy scoring."""
     
     def __init__(self, entropy_engine: EntropyEngine):
         self.engine = entropy_engine
-        self.detection_graph = nx.Graph()
         self.anomaly_threshold = 0.75
         
-    def build_threat_graph(self, data: Dict) -> nx.Graph:
-        """
-        Build a graph representation of threat data.
-        Nodes represent processes/connections, edges represent relationships.
-        
-        Args:
-            data: Threat detection data (processes, connections, behaviors)
-            
-        Returns:
-            NetworkX graph with entropy-scored nodes
-        """
-        G = nx.Graph()
-        
-        # Extract features from threat data
+    def build_threat_graph(self, data: Dict) -> Dict:
+        """Build a graph representation of threat data."""
         threat_name = data.get("threat_name", "unknown")
         details = data.get("details", {})
         behaviors = data.get("behavioral_profile", [])
         
-        # Add main threat node
-        main_entropy = self.engine.compute_entropy_score(
-            hash(threat_name) % 100, 
-            s_prev=0.5
-        )
-        G.add_node(threat_name, 
-                   entropy=main_entropy, 
-                   node_type="threat",
-                   risk_level="high" if main_entropy > 0.7 else "medium")
+        nodes = {}
+        edges = []
         
-        # Add behavior nodes
+        main_entropy = self.engine.compute_entropy_score(hash(threat_name) % 100, s_prev=0.5)
+        nodes[threat_name] = {
+            "entropy": main_entropy,
+            "node_type": "threat",
+            "risk_level": "high" if main_entropy > 0.7 else "medium"
+        }
+        
         for i, behavior in enumerate(behaviors):
             behavior_entropy = self.engine.compute_entropy_score(i + 1)
-            G.add_node(f"behavior_{behavior}", 
-                       entropy=behavior_entropy,
-                       node_type="behavior",
-                       name=behavior)
-            
-            # Connect to main threat
-            edge_weight = abs(main_entropy - behavior_entropy)
-            G.add_edge(threat_name, f"behavior_{behavior}", weight=edge_weight)
+            node_key = f"behavior_{behavior}"
+            nodes[node_key] = {
+                "entropy": behavior_entropy,
+                "node_type": "behavior",
+                "name": behavior
+            }
+            edges.append((threat_name, node_key, abs(main_entropy - behavior_entropy)))
         
-        # Add process node if available
         if "matched_process" in details:
             proc = details["matched_process"]
             proc_entropy = self.engine.compute_entropy_score(hash(proc) % 50)
-            G.add_node(f"process_{proc}",
-                       entropy=proc_entropy,
-                       node_type="process",
-                       name=proc)
-            G.add_edge(threat_name, f"process_{proc}", 
-                       weight=abs(main_entropy - proc_entropy))
+            nodes[f"process_{proc}"] = {
+                "entropy": proc_entropy,
+                "node_type": "process",
+                "name": proc
+            }
+            edges.append((threat_name, f"process_{proc}", abs(main_entropy - proc_entropy)))
         
-        # Add port node if available
         if "matched_port" in details:
             port = details["matched_port"]
             port_entropy = self.engine.compute_entropy_score(port % 100)
-            G.add_node(f"port_{port}",
-                       entropy=port_entropy,
-                       node_type="port",
-                       value=port)
-            G.add_edge(threat_name, f"port_{port}",
-                       weight=abs(main_entropy - port_entropy))
+            nodes[f"port_{port}"] = {
+                "entropy": port_entropy,
+                "node_type": "port",
+                "value": port
+            }
+            edges.append((threat_name, f"port_{port}", abs(main_entropy - port_entropy)))
         
-        return G
+        return {"nodes": nodes, "edges": edges}
     
-    def detect_anomalies(self, graph: nx.Graph) -> Dict:
-        """
-        Detect anomalies in threat graph based on entropy scores.
-        
-        Args:
-            graph: Threat graph with entropy-scored nodes
-            
-        Returns:
-            Anomaly detection results
-        """
+    def detect_anomalies(self, graph: Dict) -> Dict:
+        """Detect anomalies in threat graph based on entropy scores."""
+        nodes = graph.get("nodes", {})
         anomalies = []
         total_entropy = 0
         
-        for node, attrs in graph.nodes(data=True):
+        for node, attrs in nodes.items():
             entropy = attrs.get("entropy", 0)
             total_entropy += entropy
             
@@ -272,80 +174,51 @@ class GraphAnomalyDetector:
                     "severity": "critical" if entropy > 0.9 else "high"
                 })
         
-        # Calculate graph-level metrics
-        avg_entropy = total_entropy / max(len(graph.nodes), 1)
-        
-        # Clustering coefficient indicates threat complexity
-        try:
-            clustering = nx.average_clustering(graph)
-        except:
-            clustering = 0
+        avg_entropy = total_entropy / max(len(nodes), 1)
         
         return {
             "anomaly_count": len(anomalies),
             "anomalies": anomalies,
             "average_entropy": avg_entropy,
             "risk_score": min(1.0, avg_entropy * (1 + len(anomalies) * 0.1)),
-            "complexity_score": clustering,
-            "total_nodes": len(graph.nodes),
-            "total_edges": len(graph.edges)
+            "total_nodes": len(nodes),
+            "total_edges": len(graph.get("edges", []))
         }
     
     def analyze_threat_pattern(self, threats: List[Dict]) -> Dict:
-        """
-        Analyze multiple threats to detect patterns and mutations.
-        
-        Args:
-            threats: List of threat detection data
-            
-        Returns:
-            Pattern analysis results
-        """
+        """Analyze multiple threats to detect patterns and mutations."""
         if not threats:
             return {"patterns": [], "mutation_likelihood": 0}
         
-        # Build combined graph
-        combined_graph = nx.Graph()
         entropy_profiles = []
         
         for threat in threats:
             threat_graph = self.build_threat_graph(threat)
-            combined_graph = nx.compose(combined_graph, threat_graph)
-            
-            # Collect entropy profile
-            entropies = [attrs.get("entropy", 0) for _, attrs in threat_graph.nodes(data=True)]
+            nodes = threat_graph.get("nodes", {})
+            entropies = [attrs.get("entropy", 0) for attrs in nodes.values()]
             entropy_profiles.append({
                 "threat": threat.get("threat_name"),
                 "mean_entropy": sum(entropies) / max(len(entropies), 1),
                 "max_entropy": max(entropies) if entropies else 0
             })
         
-        # Detect connected components (threat clusters)
-        components = list(nx.connected_components(combined_graph))
-        
-        # Calculate mutation likelihood based on entropy variance
         mean_entropies = [p["mean_entropy"] for p in entropy_profiles]
         if len(mean_entropies) > 1:
-            variance = sum((e - sum(mean_entropies)/len(mean_entropies))**2 
-                          for e in mean_entropies) / len(mean_entropies)
+            avg = sum(mean_entropies) / len(mean_entropies)
+            variance = sum((e - avg)**2 for e in mean_entropies) / len(mean_entropies)
             mutation_likelihood = min(1.0, variance * 2)
         else:
             mutation_likelihood = 0
         
         return {
             "threat_count": len(threats),
-            "cluster_count": len(components),
             "entropy_profiles": entropy_profiles,
-            "mutation_likelihood": mutation_likelihood,
-            "pattern_complexity": len(combined_graph.edges) / max(len(combined_graph.nodes), 1)
+            "mutation_likelihood": mutation_likelihood
         }
 
 
 class EntropicNeutralizer:
-    """
-    Entropic neutralization system using chaos-based countermeasures.
-    Implements the "disintegrate" functionality with poetic and brute modes.
-    """
+    """Entropic neutralization system using chaos-based countermeasures."""
     
     def __init__(self, entropy_engine: EntropyEngine, detector: GraphAnomalyDetector):
         self.engine = entropy_engine
@@ -359,31 +232,15 @@ class EntropicNeutralizer:
         return analysis["risk_score"]
     
     def disintegrate_poetic(self, threat: Dict, intensity: int = 100) -> Dict:
-        """
-        Poetic mode disintegration: Entropic flood approach.
-        Uses conjugate inversion to cancel threat entropy.
-        
-        Args:
-            threat: Threat data to neutralize
-            intensity: Flood intensity
-            
-        Returns:
-            Disintegration results
-        """
+        """Poetic mode: Conjugate inversion for entropy cancellation."""
         signature = f"{threat.get('threat_name', 'unknown')}_{threat.get('id', '')}"
         
-        # Calculate initial threat entropy
         initial_entropy = self.calculate_threat_entropy(threat)
-        
-        # Generate entropic flood
         flood = self.engine.generate_entropic_flood(signature, intensity)
         
-        # Calculate entropy delta (goal: net-zero)
-        flood_entropy = flood["flood_energy"] / intensity  # Normalize
+        flood_entropy = flood["flood_energy"] / intensity
         entropy_delta = flood_entropy - initial_entropy
         
-        # Determine success based on entropy cancellation
-        # Success if delta is close to zero or negative (entropy reduced)
         success = abs(entropy_delta) < 0.3 or entropy_delta < 0
         
         result = {
@@ -403,34 +260,22 @@ class EntropicNeutralizer:
         return result
     
     def disintegrate_brute(self, threat: Dict) -> Dict:
-        """
-        Brute mode disintegration: Direct entropy overwhelming.
-        Applies maximum chaos to disrupt threat patterns.
-        
-        Args:
-            threat: Threat data to neutralize
-            
-        Returns:
-            Disintegration results
-        """
+        """Brute mode: Direct entropy overwhelming."""
         signature = f"{threat.get('threat_name', 'unknown')}_{threat.get('id', '')}"
         
-        # Calculate initial threat entropy
         initial_entropy = self.calculate_threat_entropy(threat)
         
-        # Generate multiple high-intensity floods
         floods = []
         total_flood_energy = 0
         
-        for i in range(3):  # Triple flood assault
+        for i in range(3):
             mod_sig = f"{signature}_assault_{i}"
             flood = self.engine.generate_entropic_flood(mod_sig, intensity=150)
             floods.append(flood)
             total_flood_energy += flood["flood_energy"]
         
-        # Brute force success based on overwhelming the threat entropy
         overwhelming_ratio = total_flood_energy / max(initial_entropy * 100, 1)
-        success = overwhelming_ratio > 2.0  # Need 2x entropy to overwhelm
+        success = overwhelming_ratio > 2.0
         
         result = {
             "mode": "brute",
@@ -448,22 +293,12 @@ class EntropicNeutralizer:
         return result
     
     def disintegrate(self, threat: Dict, mode: str = "poetic") -> Dict:
-        """
-        Main disintegration entry point.
-        
-        Args:
-            threat: Threat data to neutralize
-            mode: "poetic" (entropic flood) or "brute" (overwhelming)
-            
-        Returns:
-            Disintegration results
-        """
+        """Main disintegration entry point."""
         if mode == "poetic":
             return self.disintegrate_poetic(threat)
         elif mode == "brute":
             return self.disintegrate_brute(threat)
         else:
-            # Default to poetic
             return self.disintegrate_poetic(threat)
     
     def get_neutralization_stats(self) -> Dict:
@@ -492,7 +327,7 @@ class EntropicNeutralizer:
         }
 
 
-# Global instances for use in server
+# Global instances
 entropy_engine = EntropyEngine()
 anomaly_detector = GraphAnomalyDetector(entropy_engine)
 entropic_neutralizer = EntropicNeutralizer(entropy_engine, anomaly_detector)
