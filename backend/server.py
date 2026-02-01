@@ -892,11 +892,12 @@ async def start_patrol_endpoint():
         execute_countermeasure_func=execute_countermeasure,
         entropic_neutralizer=entropic_neutralizer,
         anomaly_detector=anomaly_detector,
-        war_log_class=WarLogEntry
+        war_log_class=WarLogEntry,
+        detection_class=Detection
     )
     
     await start_patrol(_patrol_daemon)
-    return {"status": "started", "message": "Patrol daemon activated"}
+    return {"status": "started", "message": "Patrol daemon activated with continuous scanning"}
 
 @api_router.post("/patrol/stop")
 async def stop_patrol_endpoint():
