@@ -14,7 +14,7 @@ import hashlib
 import random
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
-# Import Entropy Engine for Phi-Pi-Entropy based countermeasures
+# Import Entropy Engine
 from entropy_engine import (
     entropy_engine, 
     anomaly_detector, 
@@ -22,6 +22,14 @@ from entropy_engine import (
     EntropyEngine,
     GraphAnomalyDetector,
     EntropicNeutralizer
+)
+
+# Import Autonomous Patrol Daemon
+from patrol_daemon import (
+    AutonomousPatrol,
+    start_patrol,
+    stop_patrol,
+    get_patrol_daemon
 )
 
 ROOT_DIR = Path(__file__).parent
