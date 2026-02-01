@@ -208,7 +208,7 @@ Available techniques:
 4. process_termination - Kill RAT process
 5. memory_corruption - Corrupt RAT memory space
 6. decoy_deployment - Deploy honeypots to confuse
-7. entropic_flood_poetic - entropy-based chaos flood with conjugate inversion (best for single threats, uses [REDACTED]) formula)
+7. entropic_flood_poetic - entropy-based chaos flood with conjugate inversion (best for single threats, high effectiveness)
 8. entropic_flood_brute - Triple chaos assault with r=4.0 logistic map (best for mutations, replicating threats, or stubborn RATs)
 
 Consider:
@@ -430,7 +430,7 @@ async def execute_countermeasure(technique: str, threat: dict) -> dict:
         result["success"] = success
         result["details"] = {
             "mode": "poetic",
-            "formula": "[REDACTED])",
+            "technique": "entropy-based",
             "initial_entropy": disintegration["initial_entropy"],
             "flood_energy": disintegration["flood_energy"],
             "entropy_delta": disintegration["entropy_delta"],
@@ -445,7 +445,7 @@ async def execute_countermeasure(technique: str, threat: dict) -> dict:
         result["success"] = success
         result["details"] = {
             "mode": "brute",
-            "formula": "r=4.0 logistic chaos × 3 assaults",
+            "technique": "chaos-based",
             "initial_entropy": disintegration["initial_entropy"],
             "total_flood_energy": disintegration["total_flood_energy"],
             "overwhelming_ratio": disintegration["overwhelming_ratio"],
@@ -1216,7 +1216,7 @@ async def generate_flood(signature: str, intensity: int = 100):
         "signature": signature,
         "intensity": intensity,
         "flood": flood,
-        "formula": "r=4.0 logistic map with conjugate inversion"
+        "technique": "chaos-based"
     }
 
 @api_router.get("/entropy/stats")
