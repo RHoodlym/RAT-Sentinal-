@@ -465,6 +465,9 @@ async def run_agent_cycle():
     if not active_threats:
         return {"action": "patrol", "threats_processed": 0}
     
+    # Fetch known threats ONCE before the loop (N+1 query fix)
+    known_threats = await db.threat_intelligence.find({}, {"_id": 0}).to_list(50)
+    
     results = []
     
     for threat in active_threats:
@@ -481,8 +484,7 @@ async def run_agent_cycle():
         )
         await db.war_log.insert_one({**war_entry.model_dump(), "timestamp": war_entry.timestamp.isoformat()})
         
-        # 2. Check for mutation
-        known_threats = await db.threat_intelligence.find({}, {"_id": 0}).to_list(50)
+        # 2. Check for mutation (using pre-fetched known_threats)
         mutation_check = await agent.detect_mutation(threat, known_threats)
         
         if mutation_check.get("is_mutation"):
