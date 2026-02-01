@@ -866,6 +866,48 @@ async def get_rat_signatures():
     """Get known RAT signatures"""
     return RAT_SIGNATURES
 
+# ============== PATROL DAEMON ENDPOINTS ==============
+@api_router.get("/patrol/status")
+async def get_patrol_status():
+    """Get autonomous patrol daemon status."""
+    daemon = get_patrol_daemon()
+    if daemon:
+        return {
+            "status": "active",
+            **daemon.get_status()
+        }
+    return {"status": "inactive", "message": "Patrol daemon not running"}
+
+@api_router.post("/patrol/start")
+async def start_patrol_endpoint():
+    """Manually start the patrol daemon if not running."""
+    global _patrol_daemon
+    
+    daemon = get_patrol_daemon()
+    if daemon and daemon.is_running:
+        return {"status": "already_running", "message": "Patrol daemon is already active"}
+    
+    _patrol_daemon = AutonomousPatrol(
+        db=db,
+        execute_countermeasure_func=execute_countermeasure,
+        entropic_neutralizer=entropic_neutralizer,
+        anomaly_detector=anomaly_detector,
+        war_log_class=WarLogEntry
+    )
+    
+    await start_patrol(_patrol_daemon)
+    return {"status": "started", "message": "Patrol daemon activated"}
+
+@api_router.post("/patrol/stop")
+async def stop_patrol_endpoint():
+    """Stop the patrol daemon."""
+    daemon = get_patrol_daemon()
+    if not daemon or not daemon.is_running:
+        return {"status": "not_running", "message": "Patrol daemon is not active"}
+    
+    await stop_patrol()
+    return {"status": "stopped", "message": "Patrol daemon deactivated"}
+
 # ============== SPEC-COMPLIANT API ENDPOINTS ==============
 # Matches the Joesson API specification v1.0
 
@@ -881,7 +923,7 @@ class DisintegrateRequest(BaseModel):
 async def scan_endpoint(request: ScanRequest):
     """
     POST /scan - Spec-compliant endpoint
-    Scans system logs for trojan signatures using entropy-based formula.
+    Scans for trojan signatures using entropy-based detection.
     
     Params:
         log_file: string (path to system logs) - optional, uses DB threats if not provided
