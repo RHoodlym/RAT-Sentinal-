@@ -482,15 +482,17 @@ function App() {
     fetchStats();
     fetchConnections();
     fetchEntropyStats();
+    fetchPatrolStatus();
 
     const interval = setInterval(() => {
       fetchStatus();
       fetchWarLog();
       fetchConnections();
-    }, 10000);
+      fetchPatrolStatus();
+    }, 5000);  // Faster polling for real-time feel
 
     return () => clearInterval(interval);
-  }, [fetchStatus, fetchDetections, fetchWarLog, fetchStats, fetchConnections, fetchEntropyStats]);
+  }, [fetchStatus, fetchDetections, fetchWarLog, fetchStats, fetchConnections, fetchEntropyStats, fetchPatrolStatus]);
 
   // Chart data
   const techniqueData = stats?.by_technique ? Object.entries(stats.by_technique).map(([name, data]) => ({
@@ -506,6 +508,26 @@ function App() {
     <div className="App min-h-screen bg-[#09090B]" data-testid="rat-countermeasure-dashboard">
       <Toaster position="top-right" theme="dark" />
       <div className="noise-overlay" />
+      
+      {/* Patrol Status Banner */}
+      {patrolStatus?.is_running && (
+        <div className="bg-emerald-500/10 border-b border-emerald-500/30 px-4 py-2">
+          <div className="container mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              <span className="text-xs font-mono text-emerald-400">AUTONOMOUS PATROL ACTIVE</span>
+            </div>
+            <div className="flex items-center gap-4 text-xs font-mono text-zinc-400">
+              <span>Cycle: {patrolStatus?.cycle_count || 0}</span>
+              <span>Neutralized: <span className="text-emerald-400">{patrolStatus?.threats_neutralized || 0}</span></span>
+              <span>Countermeasures: {patrolStatus?.total_countermeasures || 0}</span>
+              {patrolStatus?.active_escalations > 0 && (
+                <span className="text-amber-400">Escalating: {patrolStatus?.active_escalations}</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Header */}
       <header className="border-b border-white/10 bg-black/40 backdrop-blur-md sticky top-0 z-50">
