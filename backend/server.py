@@ -1237,6 +1237,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Global patrol daemon reference
+_patrol_daemon = None
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize and start the autonomous patrol daemon on server startup."""
+    global _patrol_daemon
+    
+    logger.info("Starting autonomous patrol daemon...")
+    
+    # Create patrol daemon with dependencies
+    _patrol_daemon = AutonomousPatrol(
+        db=db,
+        execute_countermeasure_func=execute_countermeasure,
+        entropic_neutralizer=entropic_neutralizer,
+        anomaly_detector=anomaly_detector,
+        war_log_class=WarLogEntry
+    )
+    
+    # Start the patrol
+    await start_patrol(_patrol_daemon)
+    logger.info("Autonomous patrol daemon activated - continuous monitoring enabled")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    """Clean shutdown of patrol daemon and database."""
+    logger.info("Shutting down autonomous patrol daemon...")
+    await stop_patrol()
     client.close()
+    logger.info("Shutdown complete")
