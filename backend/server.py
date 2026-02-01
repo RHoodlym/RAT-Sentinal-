@@ -1185,8 +1185,7 @@ async def disintegrate_endpoint(request: DisintegrateRequest):
         "logs": logs,
         "target_sig": target_sig,
         "prune_mode": prune_mode,
-        "threat_name": detection.get("threat_name"),
-        "theorem_applied": "[CLASSIFIED]"
+        "threat_name": detection.get("threat_name")
     }
 
 # ============== LEGACY ENTROPY ENDPOINTS (kept for compatibility) ==============
