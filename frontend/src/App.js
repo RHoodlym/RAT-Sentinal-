@@ -319,6 +319,18 @@ function App() {
     setIsScanning(false);
   };
 
+  // Fetch patrol status
+  const [patrolStatus, setPatrolStatus] = useState(null);
+  
+  const fetchPatrolStatus = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/patrol/status`);
+      setPatrolStatus(response.data);
+    } catch (e) {
+      console.error("Failed to fetch patrol status:", e);
+    }
+  }, []);
+
   // Fetch all data
   const fetchStatus = useCallback(async () => {
     try {
