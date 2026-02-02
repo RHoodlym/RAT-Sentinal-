@@ -32,6 +32,13 @@ from patrol_daemon import (
     get_patrol_daemon
 )
 
+# Import Forensic Evidence Collector
+from forensics import (
+    ForensicCollector,
+    init_forensic_collector,
+    get_forensic_collector
+)
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
